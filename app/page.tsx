@@ -6,7 +6,7 @@ type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
 export default function Home() {
   const cursorRef = useRef<HTMLDivElement>(null)
-  const navRef = useRef<HTMLElement>(null)
+  const submitRef = useRef<HTMLButtonElement>(null)
   const [waiverChecked, setWaiverChecked] = useState(false)
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
@@ -14,20 +14,23 @@ export default function Home() {
     firstName: '',
     lastName: '',
     email: '',
-    team: '',
-    plusOne: '',
+    phone: '',
   })
 
-  // Cursor
+  // ────── Cursor follow + idle pulse ──────
   useEffect(() => {
     const cursor = cursorRef.current
     if (!cursor) return
+    let idleTimer: ReturnType<typeof setTimeout>
     const move = (e: MouseEvent) => {
       cursor.style.left = e.clientX + 'px'
       cursor.style.top = e.clientY + 'px'
+      cursor.classList.remove('idle')
+      clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => cursor.classList.add('idle'), 600)
     }
     document.addEventListener('mousemove', move)
-    const hoverEls = document.querySelectorAll('a, button, .waiver-wrap, input, select')
+    const hoverEls = document.querySelectorAll('a, button, input, .waiver-row, .dress-tile')
     const expand = () => cursor.classList.add('expanded')
     const shrink = () => cursor.classList.remove('expanded')
     hoverEls.forEach(el => {
@@ -40,62 +43,89 @@ export default function Home() {
         el.removeEventListener('mouseenter', expand)
         el.removeEventListener('mouseleave', shrink)
       })
+      clearTimeout(idleTimer)
     }
   }, [])
 
-  // Nav scroll
-  useEffect(() => {
-    const nav = navRef.current
-    if (!nav) return
-    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 60)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
-
-  // Scroll reveal
+  // ────── Scroll reveal ──────
   useEffect(() => {
     const reveals = document.querySelectorAll('.reveal')
     const observer = new IntersectionObserver(
       entries => entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible') }),
-      { threshold: 0.12 }
+      { threshold: 0.15 }
     )
     reveals.forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [])
 
-  // Counters
+  // ────── Location ladder scroll-spy (active = currently centered in viewport) ──────
   useEffect(() => {
-    const counters = document.querySelectorAll<HTMLElement>('.counter-num')
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (!entry.isIntersecting) return
-        const el = entry.target as HTMLElement
-        const target = parseInt(el.dataset.target || '0')
-        const start = performance.now()
-        const duration = 1400
-        const tick = (now: number) => {
-          const p = Math.min((now - start) / duration, 1)
-          const ease = 1 - Math.pow(1 - p, 3)
-          el.textContent = Math.round(ease * target).toString()
-          if (p < 1) requestAnimationFrame(tick)
-        }
-        requestAnimationFrame(tick)
-        observer.unobserve(el)
-      })
-    }, { threshold: 0.5 })
-    counters.forEach(el => observer.observe(el))
+    const steps = document.querySelectorAll<HTMLElement>('.loc-step')
+    if (!steps.length) return
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('lit')
+      }),
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 }
+    )
+    steps.forEach(el => observer.observe(el))
     return () => observer.disconnect()
   }, [])
 
-  // Parallax
+  // ────── Magnetic submit button ──────
   useEffect(() => {
-    const bg = document.querySelector<HTMLElement>('.hero-bg-text')
-    if (!bg) return
-    const onScroll = () => {
-      bg.style.transform = `translate(-50%, calc(-50% + ${window.scrollY * 0.3}px))`
+    const btn = submitRef.current
+    if (!btn) return
+    const STRENGTH = 0.25
+    const onMove = (e: MouseEvent) => {
+      const r = btn.getBoundingClientRect()
+      const dx = e.clientX - (r.left + r.width / 2)
+      const dy = e.clientY - (r.top + r.height / 2)
+      btn.style.transform = `translate(${dx * STRENGTH}px, ${dy * STRENGTH}px)`
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
+    const reset = () => { btn.style.transform = '' }
+    btn.addEventListener('mousemove', onMove)
+    btn.addEventListener('mouseleave', reset)
+    return () => {
+      btn.removeEventListener('mousemove', onMove)
+      btn.removeEventListener('mouseleave', reset)
+    }
+  }, [formState])
+
+  // ────── Date "06.09" scramble on view ──────
+  useEffect(() => {
+    const els = document.querySelectorAll<HTMLElement>('[data-scramble]')
+    const chars = '0123456789'
+    const runScramble = (el: HTMLElement) => {
+      const final = el.dataset.scramble || el.textContent || ''
+      const len = final.length
+      let frame = 0
+      const totalFrames = 22
+      const tick = () => {
+        let out = ''
+        for (let i = 0; i < len; i++) {
+          const reveal = frame / totalFrames > i / len
+          const ch = final[i]
+          out += reveal || !/[0-9]/.test(ch) ? ch : chars[Math.floor(Math.random() * chars.length)]
+        }
+        el.textContent = out
+        frame++
+        if (frame <= totalFrames + 2) requestAnimationFrame(tick)
+        else el.textContent = final
+      }
+      tick()
+    }
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) {
+          runScramble(e.target as HTMLElement)
+          observer.unobserve(e.target)
+        }
+      }),
+      { threshold: 0.6 }
+    )
+    els.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
   }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,6 +134,11 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!waiverChecked) {
+      setFormState('error')
+      setErrorMsg('Please accept the photo & film release to continue.')
+      return
+    }
     setFormState('submitting')
     setErrorMsg('')
 
@@ -122,508 +157,809 @@ export default function Home() {
     }
   }
 
+  const disabled = formState === 'submitting' || formState === 'success'
+
+  const marqueeItems = [
+    'D5XX', '·', '20 YEARS OF DROGA5', '·', 'JUNE 9', '·', 'THE BOX · LES NYC', '·',
+    '7PM — LATE', '·', 'INVITATION ONLY', '·', 'CELEBRATE WITH A MUSIC NIGHT TO REMEMBER', '·',
+  ]
+
   return (
     <>
       <style>{`
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
         :root {
+          --green: #00FF63;
+          --green-deep: #00cc4f;
+          --green-soft: rgba(0,255,99,0.5);
           --black: #0a0a0a;
           --white: #f5f3ee;
-          --gray: #888;
-          --rule: rgba(255,255,255,0.12);
+          --gray-light: #e8e6e1;
+          --gray-mid: #888;
+          --gray-dim: rgba(245,243,238,0.4);
+          --rule-dark: rgba(245,243,238,0.14);
+          --rule-light: rgba(10,10,10,0.14);
         }
+
         html { scroll-behavior: smooth; }
         body {
           background: var(--black);
           color: var(--white);
           font-family: 'DM Mono', monospace;
+          font-weight: 400;
           overflow-x: hidden;
           cursor: none;
         }
+        ::selection { background: var(--green); color: var(--black); }
+
+        /* ───────── CURSOR ───────── */
         .cursor {
           position: fixed;
-          width: 10px; height: 10px;
-          background: var(--white);
+          width: 8px; height: 8px;
+          background: var(--green);
           border-radius: 50%;
           pointer-events: none;
           z-index: 9999;
           transform: translate(-50%, -50%);
-          transition: width 0.2s, height 0.2s;
+          transition: width 0.25s, height 0.25s, background 0.25s;
           mix-blend-mode: difference;
         }
-        .cursor.expanded { width: 40px; height: 40px; }
-        nav {
-          position: fixed;
-          top: 0; left: 0; right: 0;
-          z-index: 100;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 1.5rem 2.5rem;
-          border-bottom: 1px solid transparent;
-          transition: border-color 0.4s, background 0.4s;
+        .cursor.expanded { width: 36px; height: 36px; background: var(--white); }
+        .cursor.idle { animation: cursorPulse 1.8s ease-in-out infinite; }
+        @keyframes cursorPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,99,0.6); }
+          50%      { box-shadow: 0 0 0 10px rgba(0,255,99,0); }
         }
-        nav.scrolled {
-          border-color: var(--rule);
-          background: rgba(10,10,10,0.9);
-          backdrop-filter: blur(12px);
-        }
-        .nav-logo {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 1.5rem;
-          letter-spacing: 0.08em;
-          color: var(--white);
-          text-decoration: none;
-        }
-        .nav-links { display: flex; gap: 2.5rem; list-style: none; }
-        .nav-links a {
+
+        /* ───────── TYPE ───────── */
+        .mono-label {
+          font-family: 'DM Mono', monospace;
           font-size: 0.65rem;
-          letter-spacing: 0.18em;
+          letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: var(--gray);
-          text-decoration: none;
-          transition: color 0.2s;
-          cursor: none;
         }
-        .nav-links a:hover { color: var(--white); }
-        section { min-height: 100vh; }
-        #hero {
+
+        /* ───────── TOP NEON STRIP ───────── */
+        .topbar {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: var(--green);
+          color: var(--black);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.7rem 1.5rem;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.7rem;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          overflow: hidden;
+        }
+        .topbar::before {
+          /* scanning gleam */
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.45) 50%, transparent 100%);
+          transform: translateX(-100%);
+          animation: gleam 6s linear infinite;
+          pointer-events: none;
+        }
+        @keyframes gleam {
+          0% { transform: translateX(-100%); }
+          60% { transform: translateX(120%); }
+          100% { transform: translateX(120%); }
+        }
+        .topbar a {
+          color: var(--black);
+          text-decoration: none;
+          cursor: none;
+          position: relative;
+          z-index: 1;
+          transition: opacity 0.2s;
+        }
+        .topbar a:hover { opacity: 0.65; }
+
+        /* ───────── HERO ───────── */
+        .hero {
+          background: var(--black);
+          color: var(--white);
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 2rem;
+          padding: 2.5rem 2.5rem 3rem;
+          min-height: calc(100vh - 2.6rem);
+          position: relative;
+        }
+        .hero-left {
           display: flex;
           flex-direction: column;
-          justify-content: flex-end;
-          padding: 0 2.5rem 4rem;
+          justify-content: flex-start;
+        }
+        .hero-stack {
+          font-family: 'Archivo Black', 'Bowlby One', sans-serif;
+          font-size: clamp(96px, 22vw, 320px);
+          line-height: 0.82;
+          letter-spacing: -0.025em;
+          display: flex;
+          flex-direction: column;
+          color: var(--white);
+        }
+        .hero-stack span {
+          display: block;
+          transform: scaleX(1.15) translateX(-40px);
+          transform-origin: left center;
+          opacity: 0;
+          filter: blur(18px);
+          animation: heroIn 1.05s cubic-bezier(0.18, 0.9, 0.2, 1) forwards;
+        }
+        .hero-stack span:nth-child(1) { animation-delay: 0.1s; }
+        .hero-stack span:nth-child(2) { animation-delay: 0.28s; }
+        .hero-stack span:nth-child(3) { animation-delay: 0.46s; }
+        @keyframes heroIn {
+          to { opacity: 1; filter: blur(0); transform: scaleX(1.15) translateX(0); }
+        }
+
+        .hero-right {
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding-top: 0.5rem;
+        }
+        .hero-eyebrow, .hero-footer {
+          font-family: 'Archivo Black', 'Bowlby One', sans-serif;
+          font-size: clamp(28px, 4.2vw, 64px);
+          line-height: 0.95;
+          letter-spacing: -0.015em;
+          transform: scaleX(1.1);
+          transform-origin: left center;
+          color: var(--white);
+          opacity: 0;
+          animation: fadeUp 0.8s 0.7s cubic-bezier(0.18, 0.9, 0.2, 1) forwards;
+        }
+        .hero-footer { align-self: flex-end; animation-delay: 0.95s; }
+        .hero-tagline {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.75rem;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--green);
+          margin: 3rem 0;
+          max-width: 32ch;
+          opacity: 0;
+          animation: fadeUp 0.7s 0.85s cubic-bezier(0.18, 0.9, 0.2, 1) forwards;
+          position: relative;
+        }
+        .hero-tagline::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: -2.5rem;
+          width: 1.5rem; height: 1px;
+          background: var(--green);
+          transform-origin: left;
+          animation: lineDraw 0.6s 1.2s cubic-bezier(0.18, 0.9, 0.2, 1) forwards;
+          transform: scaleX(0);
+        }
+        @keyframes lineDraw { to { transform: scaleX(1); } }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ───────── MARQUEE ───────── */
+        .marquee {
+          background: var(--black);
+          border-top: 1px solid var(--rule-dark);
+          border-bottom: 1px solid var(--rule-dark);
+          padding: 0.85rem 0;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        .marquee-track {
+          display: inline-flex;
+          gap: 2.5rem;
+          padding-right: 2.5rem;
+          animation: marquee 32s linear infinite;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.7rem;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: var(--white);
+        }
+        .marquee-track span.dim { color: var(--green); opacity: 0.85; }
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+
+        /* ───────── EVENT ───────── */
+        .event {
+          background: var(--gray-light);
+          color: var(--black);
+          padding: 5rem 2.5rem 6rem;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 3rem;
           position: relative;
           overflow: hidden;
         }
-        .hero-bg {
+        .event-bg-marks {
           position: absolute;
           inset: 0;
-          overflow: hidden;
-        }
-        .hero-bg-text {
-          position: absolute;
-          top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: clamp(260px, 40vw, 520px);
+          pointer-events: none;
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(200px, 30vw, 420px);
           color: transparent;
-          -webkit-text-stroke: 1px rgba(255,255,255,0.04);
+          -webkit-text-stroke: 1px rgba(10,10,10,0.06);
           white-space: nowrap;
-          user-select: none;
           letter-spacing: -0.02em;
+          top: 8%;
+          left: -4%;
+          line-height: 1;
+          transform: scaleX(1.1);
+          transform-origin: left center;
+          animation: drift 40s linear infinite;
         }
-        .hero-eyebrow {
-          font-size: 0.6rem;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          color: var(--gray);
+        @keyframes drift {
+          from { transform: scaleX(1.1) translateX(0); }
+          to   { transform: scaleX(1.1) translateX(-12%); }
+        }
+        .event-left, .event-right { position: relative; z-index: 1; }
+        .event-headline {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(40px, 5vw, 72px);
+          line-height: 0.95;
+          letter-spacing: -0.015em;
+          transform: scaleX(1.1);
+          transform-origin: left center;
           margin-bottom: 1.5rem;
-          opacity: 0;
-          transform: translateY(20px);
-          animation: fadeUp 0.8s 0.2s forwards;
         }
-        .hero-title {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: clamp(96px, 18vw, 240px);
-          line-height: 0.88;
-          letter-spacing: -0.01em;
-          opacity: 0;
-          animation: fadeUp 0.9s 0.4s forwards;
-        }
-        .hero-title em {
-          font-style: italic;
-          color: transparent;
-          -webkit-text-stroke: 2px var(--white);
-        }
-        .hero-sub {
-          font-size: 0.65rem;
-          letter-spacing: 0.2em;
+        .event-body {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.78rem;
+          line-height: 1.7;
+          color: var(--black);
           text-transform: uppercase;
-          color: var(--gray);
-          margin-top: 2rem;
-          opacity: 0;
-          animation: fadeUp 0.8s 0.7s forwards;
+          letter-spacing: 0.05em;
+          max-width: 40ch;
         }
-        .hero-rule { position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: var(--rule); }
-        .scroll-hint {
+        .event-right { display: flex; flex-direction: column; gap: 2rem; }
+        .event-detail .label {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--black);
+          opacity: 0.55;
+          margin-bottom: 0.5rem;
+        }
+        .event-detail .value {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(36px, 4.5vw, 64px);
+          letter-spacing: -0.01em;
+          line-height: 1;
+          transform: scaleX(1.1);
+          transform-origin: left center;
+          color: var(--black);
+        }
+
+        /* ───────── LOCATION LADDER ───────── */
+        .location {
+          background: var(--black);
+          color: var(--white);
+          padding: 6rem 2.5rem 8rem;
+          border-top: 1px solid var(--rule-dark);
+        }
+        .location-label {
+          color: var(--green);
+          margin-bottom: 2.5rem;
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+        .location-label::before {
+          content: ''; width: 32px; height: 1px; background: var(--green);
+        }
+        .location-ladder {
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+        .loc-step {
+          font-family: 'Archivo Black', sans-serif;
+          letter-spacing: -0.015em;
+          line-height: 0.95;
+          color: var(--gray-dim);
+          transform: scaleX(1.1);
+          transform-origin: left center;
+          transition: color 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.5s, letter-spacing 0.5s;
+          position: relative;
+        }
+        .loc-step::before {
+          content: '';
           position: absolute;
-          right: 2.5rem; bottom: 3.5rem;
-          display: flex; flex-direction: column;
-          align-items: center; gap: 0.5rem;
-          opacity: 0;
-          animation: fadeUp 0.8s 1.2s forwards;
+          left: -2rem;
+          top: 50%;
+          width: 0;
+          height: 1px;
+          background: var(--green);
+          transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
         }
-        .scroll-hint span {
-          font-size: 0.55rem; letter-spacing: 0.22em;
-          text-transform: uppercase; color: var(--gray);
-          writing-mode: vertical-rl;
+        .loc-step.lit { color: var(--white); }
+        .loc-step.lit::before { width: 1.5rem; }
+        .loc-step:nth-child(1) { font-size: clamp(28px, 3.2vw, 48px); }
+        .loc-step:nth-child(2) { font-size: clamp(32px, 3.8vw, 56px); }
+        .loc-step:nth-child(3) { font-size: clamp(36px, 4.4vw, 64px); }
+        .loc-step:nth-child(4) { font-size: clamp(40px, 5vw, 72px); }
+        .loc-step:nth-child(5) { font-size: clamp(48px, 5.8vw, 84px); }
+        .loc-step:nth-child(6) { font-size: clamp(54px, 6.6vw, 96px); }
+        .loc-step:nth-child(7) { font-size: clamp(64px, 7.6vw, 112px); color: var(--white); }
+        .loc-step.final {
+          font-size: clamp(56px, 7vw, 110px);
+          color: var(--green);
+          margin-top: 0.8rem;
+          line-height: 1;
         }
-        .scroll-line {
-          width: 1px; height: 48px;
-          background: linear-gradient(to bottom, var(--gray), transparent);
-          animation: scrollPulse 2s 1.5s infinite;
+        .loc-step.final.lit { letter-spacing: 0em; }
+        /* Phase 1.5 hook: tie .lit to date-based active step instead of scroll position. */
+
+        /* ───────── RSVP ───────── */
+        .rsvp {
+          background: var(--black);
+          color: var(--white);
+          padding: 5rem 2.5rem 7rem;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 3rem;
+          border-top: 1px solid var(--rule-dark);
         }
-        .marquee-wrap {
-          overflow: hidden;
-          border-top: 1px solid var(--rule);
-          border-bottom: 1px solid var(--rule);
-          padding: 1.2rem 0;
-          background: rgba(255,255,255,0.02);
-        }
-        .marquee-track {
-          display: flex; gap: 3rem;
-          animation: marquee 24s linear infinite;
-          white-space: nowrap;
-        }
-        .marquee-track span {
-          font-size: 0.6rem; letter-spacing: 0.3em;
-          text-transform: uppercase; color: var(--gray);
-          flex-shrink: 0;
-        }
-        .marquee-track span.accent { color: var(--white); }
-        .counter-strip {
-          border-top: 1px solid var(--rule);
-          display: grid; grid-template-columns: repeat(4, 1fr);
-        }
-        .counter-item {
-          padding: 3rem 2.5rem;
-          border-right: 1px solid var(--rule);
-        }
-        .counter-item:last-child { border-right: none; }
-        .counter-num {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: clamp(48px, 6vw, 80px);
-          line-height: 1; color: var(--white);
-          display: block;
-        }
-        .counter-desc {
-          font-size: 0.6rem; letter-spacing: 0.2em;
-          text-transform: uppercase; color: var(--gray); margin-top: 0.5rem;
-        }
-        #about {
-          display: grid; grid-template-columns: 1fr 1fr;
-          border-top: 1px solid var(--rule);
-          min-height: auto; padding: 6rem 2.5rem; gap: 4rem;
-        }
-        .section-label {
-          font-size: 0.6rem; letter-spacing: 0.28em;
-          text-transform: uppercase; color: var(--gray);
-          margin-bottom: 3rem;
-          display: flex; align-items: center; gap: 1rem;
-        }
-        .section-label::before {
-          content: ''; display: block;
-          width: 24px; height: 1px; background: var(--gray);
-        }
-        .about-headline {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: clamp(56px, 7vw, 96px);
-          line-height: 0.92; letter-spacing: -0.01em;
-        }
-        .about-headline em { font-style: italic; color: var(--gray); }
-        .about-right { display: flex; flex-direction: column; justify-content: flex-end; gap: 3rem; }
-        .detail-label {
-          font-size: 0.55rem; letter-spacing: 0.3em;
-          text-transform: uppercase; color: var(--gray); margin-bottom: 0.5rem;
-        }
-        .detail-value { font-size: 1rem; line-height: 1.5; color: var(--white); }
-        .about-body {
-          font-size: 0.8rem; line-height: 1.8; color: var(--gray);
-          max-width: 36ch; border-top: 1px solid var(--rule); padding-top: 2rem;
-        }
-        .about-year-block { display: flex; align-items: baseline; gap: 1rem; margin-bottom: 3rem; }
-        .year-num {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: clamp(100px, 16vw, 200px);
-          line-height: 1; color: transparent;
-          -webkit-text-stroke: 1px rgba(255,255,255,0.2);
-        }
-        .year-label {
-          font-size: 0.6rem; letter-spacing: 0.24em;
-          text-transform: uppercase; color: var(--gray); transform: translateY(-1rem);
-        }
-        #rsvp {
-          min-height: 100vh;
-          display: flex; flex-direction: column; justify-content: center;
-          border-top: 1px solid var(--rule); padding: 8rem 2.5rem;
-        }
-        .rsvp-inner { max-width: 900px; }
+        .rsvp-left { display: flex; align-items: flex-start; }
         .rsvp-headline {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: clamp(72px, 12vw, 160px);
-          line-height: 0.88; letter-spacing: -0.01em; margin-bottom: 4rem;
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(80px, 14vw, 220px);
+          line-height: 0.85;
+          letter-spacing: -0.02em;
+          color: var(--white);
+          transform: scaleX(1.15);
+          transform-origin: left center;
         }
-        .rsvp-headline em { font-style: italic; color: transparent; -webkit-text-stroke: 2px var(--white); }
-        .rsvp-form {
-          display: grid; grid-template-columns: 1fr 1fr;
-          gap: 0; border: 1px solid var(--rule);
+        .rsvp-right {
+          display: flex;
+          flex-direction: column;
+          gap: 0;
         }
         .field-wrap {
-          border-bottom: 1px solid var(--rule);
-          padding: 1.25rem 1.5rem; position: relative;
+          border: 1px solid var(--green-soft);
+          padding: 0.9rem 1.1rem 1rem;
+          background: transparent;
+          margin-bottom: -1px;
+          transition: border-color 0.3s, background 0.3s;
+          position: relative;
         }
-        .field-wrap:nth-child(odd) { border-right: 1px solid var(--rule); }
-        .field-wrap.full { grid-column: 1 / -1; border-right: none; }
+        .field-wrap::after {
+          content: '';
+          position: absolute;
+          left: 0; bottom: -1px;
+          width: 0; height: 2px;
+          background: var(--green);
+          transition: width 0.45s cubic-bezier(0.16,1,0.3,1);
+        }
+        .field-wrap:focus-within {
+          border-color: var(--green);
+          background: rgba(0,255,99,0.04);
+        }
+        .field-wrap:focus-within::after { width: 100%; }
         .field-label {
-          font-size: 0.55rem; letter-spacing: 0.28em;
-          text-transform: uppercase; color: var(--gray);
-          margin-bottom: 0.5rem; display: block;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.55rem;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: var(--green-deep);
+          display: block;
+          margin-bottom: 0.35rem;
         }
         .field-wrap input {
-          width: 100%; background: transparent; border: none; outline: none;
-          font-family: 'DM Mono', monospace; font-size: 0.9rem;
-          color: var(--white); padding: 0; cursor: none;
+          width: 100%;
+          background: transparent;
+          border: none;
+          outline: none;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.95rem;
+          color: var(--white);
+          padding: 0;
+          cursor: none;
+          caret-color: var(--green);
         }
-        .field-wrap input::placeholder { color: rgba(255,255,255,0.2); }
-        .field-line {
-          position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
-          background: var(--white); transform: scaleX(0);
-          transform-origin: left; transition: transform 0.3s;
-        }
-        .field-wrap input:focus ~ .field-line,
-        .field-wrap input:not(:placeholder-shown) ~ .field-line { transform: scaleX(1); }
-        .waiver-wrap {
-          grid-column: 1 / -1;
-          border-top: 1px solid var(--rule);
-          padding: 1.5rem;
-          display: flex; align-items: flex-start; gap: 1rem; cursor: pointer;
-        }
-        .waiver-checkbox {
-          width: 18px; height: 18px;
-          border: 1px solid rgba(255,255,255,0.3);
-          flex-shrink: 0;
-          display: flex; align-items: center; justify-content: center;
-          margin-top: 1px; transition: border-color 0.2s, background 0.2s;
+        .field-wrap input::placeholder { color: rgba(245,243,238,0.25); }
+        .field-wrap input:disabled { opacity: 0.5; }
+
+        .waiver-row {
+          border: 1px solid var(--green-soft);
+          padding: 1rem 1.1rem;
+          display: flex;
+          gap: 1rem;
+          align-items: flex-start;
           cursor: pointer;
+          margin-top: 0.4rem;
+          transition: border-color 0.3s, background 0.3s;
         }
-        .waiver-checkbox.checked { border-color: var(--white); background: var(--white); }
+        .waiver-row:hover { border-color: var(--green); background: rgba(0,255,99,0.03); }
+        .waiver-checkbox {
+          width: 14px; height: 14px;
+          border: 1px solid var(--green);
+          background: transparent;
+          flex-shrink: 0;
+          margin-top: 4px;
+          transition: background 0.18s, transform 0.18s;
+          position: relative;
+        }
+        .waiver-checkbox.checked { background: var(--green); transform: scale(1.05); }
         .waiver-checkbox.checked::after {
-          content: ''; width: 10px; height: 6px;
-          border-left: 2px solid var(--black); border-bottom: 2px solid var(--black);
-          transform: rotate(-45deg) translateY(-1px); display: block;
+          content: '';
+          position: absolute;
+          inset: 2px;
+          background: var(--green);
+          animation: pop 0.4s cubic-bezier(0.16,1,0.3,1);
         }
-        .waiver-text { font-size: 0.7rem; line-height: 1.7; color: var(--gray); }
-        .waiver-text strong { color: var(--white); font-weight: 400; }
+        @keyframes pop {
+          0%   { transform: scale(0); }
+          60%  { transform: scale(1.2); }
+          100% { transform: scale(1); }
+        }
+        .waiver-text {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.62rem;
+          line-height: 1.65;
+          letter-spacing: 0.04em;
+          color: var(--gray-dim);
+          text-transform: uppercase;
+        }
+        .waiver-text strong { color: var(--green); font-weight: 500; }
+        .waiver-text a {
+          color: var(--white);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+
         .rsvp-submit {
-          grid-column: 1 / -1;
-          background: transparent; color: var(--white);
-          font-family: 'DM Mono', monospace; font-size: 0.65rem;
-          letter-spacing: 0.3em; text-transform: uppercase;
-          padding: 1.5rem; cursor: none;
-          border: none; border-top: 1px solid var(--rule);
-          width: 100%; text-align: left;
-          display: flex; align-items: center; justify-content: space-between;
-          transition: background 0.25s;
+          margin-top: 0.4rem;
+          background: var(--green);
+          color: var(--black);
+          font-family: 'DM Mono', monospace;
+          font-size: 0.7rem;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          padding: 1.1rem 1.2rem;
+          border: 1px solid var(--green);
+          cursor: none;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          transition: background 0.25s, color 0.25s, transform 0.18s ease-out;
+          will-change: transform;
         }
-        .rsvp-submit:hover:not(:disabled) { background: rgba(255,255,255,0.04); }
-        .rsvp-submit:disabled { opacity: 0.5; }
-        .rsvp-submit .arrow { font-size: 1.2rem; transition: transform 0.3s; }
+        .rsvp-submit:hover:not(:disabled) { background: var(--black); color: var(--green); }
+        .rsvp-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+        .rsvp-submit .arrow { font-size: 1.1rem; transition: transform 0.25s; }
         .rsvp-submit:hover:not(:disabled) .arrow { transform: translateX(6px); }
-        .success-msg {
-          grid-column: 1 / -1;
-          padding: 2rem 1.5rem; font-size: 0.75rem;
-          letter-spacing: 0.1em; color: var(--white);
-          border-top: 1px solid var(--rule);
-          animation: fadeUp 0.5s forwards;
+
+        .form-msg {
+          padding: 1rem 1.1rem;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.68rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          margin-top: 0.4rem;
+          animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1);
         }
-        .error-msg {
-          grid-column: 1 / -1;
-          padding: 1rem 1.5rem; font-size: 0.7rem;
-          letter-spacing: 0.08em; color: #ff6b6b;
-          border-top: 1px solid rgba(255,107,107,0.3);
-          background: rgba(255,107,107,0.05);
+        .form-msg.success { border: 1px solid var(--green); color: var(--green); }
+        .form-msg.error { border: 1px solid #ff6b6b; color: #ff6b6b; }
+
+        /* ───────── DRESS INSPO ───────── */
+        .dress {
+          background: var(--gray-light);
+          color: var(--black);
+          padding: 5rem 2.5rem 6rem;
         }
+        .dress-head {
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 2rem;
+          margin-bottom: 2.5rem;
+          flex-wrap: wrap;
+        }
+        .dress-headline {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(40px, 5vw, 72px);
+          line-height: 0.95;
+          letter-spacing: -0.015em;
+          transform: scaleX(1.1);
+          transform-origin: left center;
+        }
+        .dress-sub {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.7rem;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--black);
+          opacity: 0.6;
+          max-width: 32ch;
+        }
+        .dress-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.8rem;
+        }
+        .dress-tile {
+          aspect-ratio: 3 / 4;
+          position: relative;
+          overflow: hidden;
+          background: #d6d3cd;
+          cursor: none;
+        }
+        .dress-tile img {
+          width: 100%; height: 100%;
+          object-fit: cover;
+          display: block;
+          filter: grayscale(0.35) contrast(1.02);
+          transform: scale(1.02);
+          transition: filter 0.6s cubic-bezier(0.16,1,0.3,1),
+                      transform 0.7s cubic-bezier(0.16,1,0.3,1);
+        }
+        .dress-tile::after {
+          /* corner mark */
+          content: '';
+          position: absolute;
+          top: 10px; right: 10px;
+          width: 8px; height: 8px;
+          background: var(--green);
+          opacity: 0;
+          transform: scale(0.4);
+          transition: opacity 0.35s, transform 0.35s cubic-bezier(0.16,1,0.3,1);
+        }
+        .dress-tile::before {
+          /* counter chip */
+          content: attr(data-n);
+          position: absolute;
+          bottom: 10px; left: 10px;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.55rem;
+          letter-spacing: 0.24em;
+          color: var(--white);
+          background: rgba(10,10,10,0.55);
+          padding: 4px 8px;
+          backdrop-filter: blur(4px);
+          z-index: 2;
+          opacity: 0.85;
+        }
+        .dress-tile:hover img {
+          filter: grayscale(0) contrast(1.05);
+          transform: scale(1.06);
+        }
+        .dress-tile:hover::after { opacity: 1; transform: scale(1); }
+
+        /* ───────── FOOTER ───────── */
         footer {
-          border-top: 1px solid var(--rule); padding: 3rem 2.5rem;
-          display: flex; align-items: center; justify-content: space-between;
+          background: var(--black);
+          border-top: 1px solid var(--rule-dark);
+          padding: 2.5rem 2.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
         .footer-logo {
-          font-family: 'Bebas Neue', sans-serif;
-          font-size: 2.5rem; letter-spacing: 0.06em;
-          color: rgba(255,255,255,0.12);
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 2rem;
+          letter-spacing: -0.01em;
+          color: rgba(245,243,238,0.18);
+          transform: scaleX(1.1);
+          transform-origin: left center;
         }
         .footer-copy {
-          font-size: 0.6rem; letter-spacing: 0.18em;
-          text-transform: uppercase; color: var(--gray);
+          font-family: 'DM Mono', monospace;
+          font-size: 0.6rem;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: var(--gray-mid);
         }
-        .reveal { opacity: 0; transform: translateY(40px); transition: opacity 0.8s cubic-bezier(0.16,1,0.3,1), transform 0.8s cubic-bezier(0.16,1,0.3,1); }
+
+        /* ───────── REVEAL ───────── */
+        .reveal {
+          opacity: 0;
+          transform: translateY(28px);
+          transition:
+            opacity 0.75s cubic-bezier(0.16,1,0.3,1),
+            transform 0.75s cubic-bezier(0.16,1,0.3,1);
+        }
         .reveal.visible { opacity: 1; transform: translateY(0); }
-        .reveal-delay-1 { transition-delay: 0.1s; }
-        .reveal-delay-2 { transition-delay: 0.2s; }
-        .reveal-delay-3 { transition-delay: 0.35s; }
-        .reveal-delay-4 { transition-delay: 0.5s; }
-        @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
-        @keyframes scrollPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-        @media (max-width: 768px) {
-          #about { grid-template-columns: 1fr; padding: 4rem 1.5rem; }
-          .rsvp-form { grid-template-columns: 1fr; }
-          .field-wrap:nth-child(odd) { border-right: none; }
-          .counter-strip { grid-template-columns: repeat(2, 1fr); }
-          .counter-item:nth-child(2) { border-right: none; }
-          nav { padding: 1.2rem 1.5rem; }
-          .nav-links { gap: 1.5rem; }
-          #hero { padding: 0 1.5rem 3rem; }
-          #rsvp { padding: 5rem 1.5rem; }
+        .reveal-d1 { transition-delay: 0.06s; }
+        .reveal-d2 { transition-delay: 0.12s; }
+        .reveal-d3 { transition-delay: 0.2s; }
+        .reveal-d4 { transition-delay: 0.28s; }
+        .reveal-d5 { transition-delay: 0.36s; }
+        .reveal-d6 { transition-delay: 0.44s; }
+        .reveal-d7 { transition-delay: 0.52s; }
+
+        /* ───────── RESPONSIVE ───────── */
+        @media (max-width: 900px) {
+          .hero { grid-template-columns: 1fr; padding: 2rem 1.25rem 3rem; }
+          .hero-right { padding-top: 1.5rem; }
+          .event { grid-template-columns: 1fr; padding: 3.5rem 1.25rem 4.5rem; }
+          .rsvp { grid-template-columns: 1fr; padding: 3.5rem 1.25rem 5rem; }
+          .rsvp-headline { font-size: clamp(64px, 18vw, 130px); }
+          .dress-grid { grid-template-columns: repeat(2, 1fr); }
+          .dress { padding: 3.5rem 1.25rem 4.5rem; }
+          .location { padding: 4rem 1.25rem 5rem; }
+          .topbar { padding: 0.6rem 1.25rem; font-size: 0.6rem; }
+          footer { flex-direction: column; gap: 1rem; align-items: flex-start; padding: 2rem 1.25rem; }
+        }
+        @media (max-width: 480px) {
+          body { cursor: auto; }
+          .cursor { display: none; }
+          input, button, a, .waiver-row, .dress-tile { cursor: auto !important; }
+          .rsvp-submit { cursor: pointer !important; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
+          .marquee-track { animation: none; }
         }
       `}</style>
 
       <div className="cursor" ref={cursorRef} />
 
-      <nav ref={navRef}>
-        <a href="#hero" className="nav-logo">Droga5</a>
-        <ul className="nav-links">
-          <li><a href="#about">About</a></li>
-          <li><a href="#rsvp">RSVP</a></li>
-        </ul>
-      </nav>
+      {/* TOP NEON STRIP */}
+      <header className="topbar">
+        <a href="#hero">DROGA5</a>
+        <a href="#rsvp">RSVP</a>
+      </header>
 
       {/* HERO */}
-      <section id="hero">
-        <div className="hero-bg">
-          <div className="hero-bg-text">D5XX</div>
+      <section id="hero" className="hero">
+        <div className="hero-left">
+          <h1 className="hero-stack" aria-label="D5MNXX">
+            <span>D5</span>
+            <span>MN</span>
+            <span>XX</span>
+          </h1>
         </div>
-        <div className="scroll-hint">
-          <span>Scroll</span>
-          <div className="scroll-line" />
+        <div className="hero-right">
+          <p className="hero-eyebrow">20 YEARS<br />OF DROGA5</p>
+          <p className="hero-tagline">Celebrate with a music night to remember</p>
+          <p className="hero-footer">20 YEARS<br />OF DROGA5</p>
         </div>
-        <p className="hero-eyebrow">2006 — 2026 &nbsp;&nbsp;·&nbsp;&nbsp; New York</p>
-        <h1 className="hero-title">D5<em>XX</em></h1>
-        <p className="hero-sub">Droga5 Turns Twenty &nbsp;·&nbsp; A Night for the People Who Made It</p>
-        <div className="hero-rule" />
       </section>
 
       {/* MARQUEE */}
-      <div className="marquee-wrap">
+      <div className="marquee" aria-hidden="true">
         <div className="marquee-track">
-          {[...Array(2)].map((_, i) => (
-            <span key={i} style={{ display: 'contents' }}>
-              <span className="accent">D5XX</span>
-              <span>Twenty Years</span>
-              <span className="accent">·</span>
-              <span>Creatively Led</span>
-              <span className="accent">·</span>
-              <span>Strategically Driven</span>
-              <span className="accent">·</span>
-              <span>Droga5</span>
-              <span className="accent">·</span>
-              <span>2006–2026</span>
-              <span className="accent">·</span>
-            </span>
+          {[...Array(3)].map((_, copy) => (
+            marqueeItems.map((item, i) => (
+              <span key={`${copy}-${i}`} className={item === '·' ? 'dim' : ''}>{item}</span>
+            ))
           ))}
         </div>
       </div>
 
-      {/* COUNTER STRIP */}
-      <div className="counter-strip">
-        {[
-          { target: 20, label: 'Years' },
-          { target: 25, label: 'Agency of the Year Awards' },
-          { target: 2, label: 'Decades of Impact' },
-          { target: 1, label: 'Night to Remember' },
-        ].map((item, i) => (
-          <div className={`counter-item reveal${i > 0 ? ` reveal-delay-${i}` : ''}`} key={i}>
-            <span className="counter-num" data-target={item.target}>0</span>
-            <p className="counter-desc">{item.label}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* ABOUT */}
-      <section id="about">
-        <div>
-          <p className="section-label reveal">The Event</p>
-          <div className="about-year-block reveal reveal-delay-1">
-            <span className="year-num">20</span>
-            <span className="year-label">Years</span>
-          </div>
-          <h2 className="about-headline reveal reveal-delay-2">
-            Twenty<br /><em>years</em><br />of making<br />it matter.
-          </h2>
-        </div>
-        <div className="about-right">
-          {[
-            { label: 'Date', value: 'Friday, October 3rd, 2026' },
-            { label: 'Location', value: 'Droga5 HQ\n120 Wall Street, 17th Floor\nNew York, NY 10005' },
-            { label: 'Time', value: '7:00 PM — Late' },
-            { label: 'Dress', value: 'Smart / Sharp' },
-          ].map((d, i) => (
-            <div className={`reveal${i > 0 ? ` reveal-delay-${Math.min(i, 3)}` : ''}`} key={d.label}>
-              <p className="detail-label">{d.label}</p>
-              <p className="detail-value" style={{ whiteSpace: 'pre-line' }}>{d.value}</p>
-            </div>
-          ))}
-          <p className="about-body reveal">
-            An invitation-only evening celebrating two decades of work, people, and the ideas that defined a generation of creativity. Past and present Drogans, clients, and collaborators — together for one night.
+      {/* EVENT */}
+      <section id="event" className="event">
+        <div className="event-bg-marks">D5XX D5XX</div>
+        <div className="event-left">
+          <h2 className="event-headline reveal">THE EVENT</h2>
+          <p className="event-body reveal reveal-d1">
+            Twenty years of making it matter. An invitation-only evening
+            celebrating the decades of work, people, and the ideas that defined
+            a generation of creativity. Past and present Drogans, clients, and
+            collaborators — together for one night.
           </p>
+        </div>
+        <div className="event-right">
+          <div className="event-detail reveal reveal-d2">
+            <p className="label">Date</p>
+            <p className="value" data-scramble="06.09">06.09</p>
+          </div>
+          <div className="event-detail reveal reveal-d3">
+            <p className="label">Location</p>
+            <p className="value">THE BOX</p>
+          </div>
+          <div className="event-detail reveal reveal-d4">
+            <p className="label">Time</p>
+            <p className="value">7PM — LATE</p>
+          </div>
+        </div>
+      </section>
+
+      {/* PHASED LOCATION REVEAL */}
+      <section id="location" className="location">
+        <p className="mono-label location-label reveal">You are here</p>
+        <div className="location-ladder">
+          <div className="loc-step reveal">EARTH</div>
+          <div className="loc-step reveal reveal-d1">NORTH AMERICA</div>
+          <div className="loc-step reveal reveal-d2">UNITED STATES</div>
+          <div className="loc-step reveal reveal-d3">NEW YORK CITY</div>
+          <div className="loc-step reveal reveal-d4">MANHATTAN</div>
+          <div className="loc-step reveal reveal-d5">LOWER EAST SIDE</div>
+          <div className="loc-step reveal reveal-d6">THE BOX</div>
+          <div className="loc-step final reveal reveal-d7">HELL — SEE YOU THERE</div>
         </div>
       </section>
 
       {/* RSVP */}
-      <section id="rsvp">
-        <div className="rsvp-inner">
-          <p className="section-label reveal">RSVP</p>
-          <h2 className="rsvp-headline reveal reveal-delay-1">
-            See you<br />there<em>.</em>
-          </h2>
-
-          <form className="rsvp-form reveal reveal-delay-2" onSubmit={handleSubmit}>
-
-            <div className="field-wrap">
+      <section id="rsvp" className="rsvp">
+        <div className="rsvp-left">
+          <h2 className="rsvp-headline reveal">SEE YOU<br />THERE?</h2>
+        </div>
+        <div className="rsvp-right">
+          <form onSubmit={handleSubmit} noValidate>
+            <div className="field-wrap reveal">
               <label className="field-label" htmlFor="firstName">First Name</label>
-              <input type="text" id="firstName" name="firstName" placeholder="David"
-                required value={form.firstName} onChange={handleChange}
-                disabled={formState === 'submitting' || formState === 'success'} />
-              <div className="field-line" />
+              <input
+                type="text" id="firstName" name="firstName"
+                placeholder="David" required
+                value={form.firstName} onChange={handleChange} disabled={disabled}
+              />
             </div>
-
-            <div className="field-wrap">
+            <div className="field-wrap reveal reveal-d1">
               <label className="field-label" htmlFor="lastName">Last Name</label>
-              <input type="text" id="lastName" name="lastName" placeholder="Droga"
-                required value={form.lastName} onChange={handleChange}
-                disabled={formState === 'submitting' || formState === 'success'} />
-              <div className="field-line" />
+              <input
+                type="text" id="lastName" name="lastName"
+                placeholder="Droga" required
+                value={form.lastName} onChange={handleChange} disabled={disabled}
+              />
             </div>
-
-            <div className="field-wrap">
+            <div className="field-wrap reveal reveal-d2">
               <label className="field-label" htmlFor="email">Email</label>
-              <input type="email" id="email" name="email" placeholder="you@droga5.com"
-                required value={form.email} onChange={handleChange}
-                disabled={formState === 'submitting' || formState === 'success'} />
-              <div className="field-line" />
+              <input
+                type="email" id="email" name="email"
+                placeholder="you@email.com" required
+                value={form.email} onChange={handleChange} disabled={disabled}
+              />
+            </div>
+            <div className="field-wrap reveal reveal-d3">
+              <label className="field-label" htmlFor="phone">Phone (Optional)</label>
+              <input
+                type="tel" id="phone" name="phone"
+                placeholder="555-555-5555"
+                value={form.phone} onChange={handleChange} disabled={disabled}
+              />
             </div>
 
-            <div className="field-wrap">
-              <label className="field-label" htmlFor="team">Office / Team</label>
-              <input type="text" id="team" name="team" placeholder="New York, London, Dublin…"
-                value={form.team} onChange={handleChange}
-                disabled={formState === 'submitting' || formState === 'success'} />
-              <div className="field-line" />
-            </div>
-
-            <div className="field-wrap full">
-              <label className="field-label" htmlFor="plusOne">Bringing a +1?</label>
-              <input type="text" id="plusOne" name="plusOne" placeholder="Guest name (optional)"
-                value={form.plusOne} onChange={handleChange}
-                disabled={formState === 'submitting' || formState === 'success'} />
-              <div className="field-line" />
-            </div>
-
-            {/* WAIVER */}
-            <div className="waiver-wrap" onClick={() => {
-              if (formState !== 'submitting' && formState !== 'success') setWaiverChecked(v => !v)
-            }}>
+            <div
+              className="waiver-row reveal reveal-d4"
+              onClick={() => { if (!disabled) setWaiverChecked(v => !v) }}
+              role="checkbox"
+              aria-checked={waiverChecked}
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if ((e.key === ' ' || e.key === 'Enter') && !disabled) {
+                  e.preventDefault()
+                  setWaiverChecked(v => !v)
+                }
+              }}
+            >
               <div className={`waiver-checkbox${waiverChecked ? ' checked' : ''}`} />
               <p className="waiver-text">
-                <strong>Photo &amp; Film Release</strong> — By checking this box, I consent to being photographed and/or filmed during the D5XX event on October 3rd, 2026. I grant Droga5 the right to use such images and recordings for internal communications, archival, and social purposes without additional compensation.
+                <strong>FILM &amp; PHOTO RELEASE:</strong> By checking this box,
+                I consent to being photographed and/or filmed at D5XX on June 9
+                and grant Droga5 the right to use such images and recordings for
+                internal communications, archival, and social purposes.{' '}
+                <a href="/terms" target="_blank" rel="noreferrer">Read full terms</a>.
               </p>
             </div>
 
             {formState !== 'success' && (
               <button
+                ref={submitRef}
                 type="submit"
-                className="rsvp-submit"
-                disabled={formState === 'submitting'}
+                className="rsvp-submit reveal reveal-d5"
+                disabled={disabled}
               >
                 <span>{formState === 'submitting' ? 'Sending…' : 'Confirm Attendance'}</span>
                 <span className="arrow">{formState === 'submitting' ? '…' : '→'}</span>
@@ -631,22 +967,41 @@ export default function Home() {
             )}
 
             {formState === 'error' && (
-              <div className="error-msg">⚠ &nbsp;{errorMsg}</div>
+              <div className="form-msg error">⚠ &nbsp;{errorMsg}</div>
             )}
-
             {formState === 'success' && (
-              <div className="success-msg">
-                ✓ &nbsp; You&apos;re on the list, {form.firstName}. Check your inbox — we&apos;ll be in touch closer to the night.
+              <div className="form-msg success">
+                ✓ &nbsp;You&apos;re on the list, {form.firstName}. Check your inbox.
               </div>
             )}
-
           </form>
+        </div>
+      </section>
+
+      {/* DRESS INSPO */}
+      <section id="dress" className="dress">
+        <div className="dress-head">
+          <h2 className="dress-headline reveal">DRESS INSPO</h2>
+          <p className="dress-sub reveal reveal-d1">
+            Smart / Sharp. Shiny, tactile, statement. Wear what makes the room.
+          </p>
+        </div>
+        <div className="dress-grid">
+          {[1, 2, 3, 4].map((n, i) => (
+            <div
+              key={n}
+              className={`dress-tile reveal reveal-d${i + 2}`}
+              data-n={String(n).padStart(2, '0')}
+            >
+              <img src={`/lookbook/${n}.jpg`} alt={`Dress inspo ${n}`} loading="lazy" />
+            </div>
+          ))}
         </div>
       </section>
 
       {/* FOOTER */}
       <footer>
-        <div className="footer-logo">Droga5</div>
+        <div className="footer-logo">DROGA5</div>
         <p className="footer-copy">D5XX &nbsp;·&nbsp; 2006—2026 &nbsp;·&nbsp; New York</p>
       </footer>
     </>

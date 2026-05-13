@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Mixer from '@/components/Mixer'
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -977,6 +978,9 @@ export default function Home() {
           </form>
         </div>
       </section>
+
+      {/* MIXER */}
+      <Mixer />
 
       {/* DRESS INSPO */}
       <section id="dress" className="dress">

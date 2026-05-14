@@ -1527,10 +1527,43 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         }
 
         @media (max-width: 900px) {
-          .mixer { padding: 3.5rem 1.25rem 4.5rem; }
-          .mixer-panel { grid-template-columns: 1fr; padding: 1.4rem 1.1rem; gap: 1.6rem; }
-          .mixer-sliders { min-height: 230px; gap: 0.4rem; }
+          .mixer { padding: 2.5rem 1.1rem 3rem; }
+          .mixer-panel {
+            grid-template-columns: 1fr;
+            padding: 1.2rem 1rem;
+            gap: 1.2rem;
+            overscroll-behavior: contain;
+            max-width: 100%;
+          }
+          /* Slider grid: 5 columns of sliders only; divider + knobs flow below as full-width rows */
+          .mixer-sliders {
+            grid-template-columns: repeat(5, 1fr);
+            min-height: 240px;
+            gap: 0.65rem;
+          }
+          .slider-track { width: 32px; }
+          .slider-handle { left: -10px; right: -10px; height: 18px; }
+          .slider-track:hover  .slider-handle,
+          .slider-track:active .slider-handle { left: -14px; right: -14px; height: 22px; }
+          .slider-divider {
+            grid-column: 1 / -1;
+            height: 1px;
+            width: 100%;
+            margin: 0.4rem 0 0;
+          }
+          .slider-knobs {
+            grid-column: 1 / -1;
+            flex-direction: row;
+            justify-content: space-around;
+            padding: 0.6rem 0 0;
+            min-width: 0;
+            gap: 1.5rem;
+          }
           .mixer-right { min-width: 0; }
+          /* Belt-and-suspenders: lock touch action on every interactive control */
+          .slider-track, .slider-col, .cf3-track, .knob, .xy-pad {
+            touch-action: none;
+          }
         }
 
         /* ───────────────── DARK THEME OVERRIDES ───────────────── */

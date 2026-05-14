@@ -1507,7 +1507,8 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           font-size: 0.55rem;
           letter-spacing: 0.28em;
           text-transform: uppercase;
-          opacity: 0.32;
+          color: var(--accent);
+          opacity: 0.7;
           text-align: right;
         }
 

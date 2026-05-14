@@ -1501,8 +1501,15 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         }
 
         .mixer-footer { margin-top: 0.5rem; font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.45; }
+        .mixer-footer-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
         .mixer-credit {
-          margin: 1rem 0 0;
+          margin: 0;
           font-family: 'DM Mono', monospace;
           font-size: 0.55rem;
           letter-spacing: 0.28em;
@@ -1511,6 +1518,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           opacity: 0.45;
           text-align: right;
         }
+        .mixer-credit-left { text-align: left; }
 
         @media (max-width: 900px) {
           .mixer { padding: 3.5rem 1.25rem 4.5rem; }
@@ -1724,7 +1732,10 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         </div>
       </div>
 
-      <p className="mixer-credit">Made w. love · Durazzo</p>
+      <div className="mixer-footer-row">
+        <p className="mixer-credit mixer-credit-left">DOS Coffee Engineering</p>
+        <p className="mixer-credit">Made w. love · Durazzo</p>
+      </div>
     </section>
   )
 }

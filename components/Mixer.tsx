@@ -1519,6 +1519,12 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           text-align: right;
         }
         .mixer-credit-left { text-align: left; }
+        .credit-tm {
+          font-size: 0.55em;
+          letter-spacing: 0;
+          vertical-align: super;
+          margin-left: 2px;
+        }
 
         @media (max-width: 900px) {
           .mixer { padding: 3.5rem 1.25rem 4.5rem; }
@@ -1733,7 +1739,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
       </div>
 
       <div className="mixer-footer-row">
-        <p className="mixer-credit mixer-credit-left">DOS Engineering</p>
+        <p className="mixer-credit mixer-credit-left">DOS Engineering<sup className="credit-tm">™</sup></p>
         <p className="mixer-credit">W. love · Durazzo</p>
       </div>
     </section>

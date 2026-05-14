@@ -4,9 +4,29 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import Mixer from './Mixer'
 
+type Theme = 'dark' | 'light'
+const THEME_KEY = 'd5xx-mix-theme'
+
 export default function MixGate() {
   const [revealed, setRevealed] = useState(false)
   const [pressed, setPressed] = useState(false)
+  const [theme, setTheme] = useState<Theme>('dark')
+
+  // Load saved theme on mount. Default stays 'dark' if nothing is saved.
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(THEME_KEY)
+      if (saved === 'light' || saved === 'dark') setTheme(saved)
+    } catch { /* localStorage unavailable; ignore */ }
+  }, [])
+
+  const toggleTheme = useCallback(() => {
+    setTheme(prev => {
+      const next: Theme = prev === 'dark' ? 'light' : 'dark'
+      try { window.localStorage.setItem(THEME_KEY, next) } catch { /* ignore */ }
+      return next
+    })
+  }, [])
 
   const reveal = useCallback(() => {
     setPressed(true)
@@ -30,7 +50,7 @@ export default function MixGate() {
   }, [revealed, pressed, reveal])
 
   return (
-    <main className="mix-page">
+    <main className="mix-page" data-theme={theme}>
       <style>{`
         html, body { background: #f5f3ee; margin: 0; }
         .mix-page { min-height: 100vh; background: #f5f3ee; position: relative; }
@@ -53,6 +73,14 @@ export default function MixGate() {
         }
         .mix-topbar a { color: #0a0a0a; text-decoration: none; }
         .mix-topbar a:hover { opacity: 0.7; }
+        .mix-topbar-right { display: flex; align-items: center; gap: 1.2rem; }
+        .theme-toggle {
+          background: transparent; border: none; padding: 0;
+          font: inherit; letter-spacing: 0.22em; text-transform: uppercase;
+          color: inherit; cursor: pointer;
+          text-decoration: underline; text-underline-offset: 4px;
+        }
+        .theme-toggle:hover { opacity: 0.65; }
 
         /* ─── Locked gate ─── */
         .gate {
@@ -200,11 +228,64 @@ export default function MixGate() {
           .p-key { animation: none; }
           .gate, .mixer-stage { transition: opacity 0.25s; }
         }
+
+        /* ───────────────── DARK THEME ───────────────── */
+        .mix-page[data-theme="dark"] { background: #0a0a0a; color: #f5f3ee; }
+        .mix-page[data-theme="dark"] html, body { background: #0a0a0a; }
+        .mix-page[data-theme="dark"] .gate { background: #0a0a0a; }
+        .mix-page[data-theme="dark"] .gate-hint { color: #f5f3ee; }
+        .mix-page[data-theme="dark"] .gate-hint kbd {
+          background: #1a1a1a; color: #f5f3ee; border-color: #f5f3ee;
+          box-shadow: 0 2px 0 0 rgba(245,243,238,0.7);
+        }
+        .mix-page[data-theme="dark"] .gate-sub { color: #f5f3ee; opacity: 0.55; }
+        /* The big P key stays white-on-dark in both themes — it's the hero target. The shadow
+           depth gets lighter in dark mode so it reads. */
+        .mix-page[data-theme="dark"] .p-key {
+          box-shadow:
+            0 14px 0 0 rgba(245,243,238,0.5),
+            0 18px 38px rgba(0,0,0,0.55);
+        }
+        .mix-page[data-theme="dark"] .p-key:hover {
+          box-shadow:
+            0 17px 0 0 rgba(245,243,238,0.5),
+            0 22px 44px rgba(0,0,0,0.6);
+        }
+        .mix-page[data-theme="dark"] .p-key:active,
+        .mix-page[data-theme="dark"] .p-key.pressed {
+          box-shadow:
+            0 3px 0 0 rgba(245,243,238,0.5),
+            0 6px 16px rgba(0,0,0,0.4);
+        }
+        @keyframes pBreatheDark {
+          0%, 100% {
+            box-shadow:
+              0 14px 0 0 rgba(245,243,238,0.5),
+              0 18px 38px rgba(0,0,0,0.55);
+          }
+          50% {
+            box-shadow:
+              0 14px 0 0 rgba(245,243,238,0.5),
+              0 18px 38px rgba(0,0,0,0.55),
+              0 0 90px rgba(0,255,99,0.45);
+          }
+        }
+        .mix-page[data-theme="dark"] .p-key { animation-name: pBreatheDark; }
       `}</style>
 
       <header className="mix-topbar">
         <Link href="/">← DROGA5</Link>
-        <span>{revealed ? 'Mix · Live' : 'Locked'}</span>
+        <div className="mix-topbar-right">
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            {theme === 'dark' ? '☼ Light' : '☾ Dark'}
+          </button>
+          <span>{revealed ? 'Mix · Live' : 'Locked'}</span>
+        </div>
       </header>
 
       {/* Locked gate */}

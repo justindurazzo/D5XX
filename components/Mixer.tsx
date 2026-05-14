@@ -1382,7 +1382,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         .xy-corner-y { top: 4px; left: 6px; writing-mode: vertical-rl; }
         .xy-pad:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
 
-        /* Centered "click & drag" instruction. Dims away when the user gets close (hover/active). */
+        /* Centered "click & drag" instruction. Pulses to draw the eye; dims away on hover/active. */
         .xy-instruct {
           position: absolute;
           top: 50%; left: 50%;
@@ -1391,13 +1391,21 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           font-size: 0.58rem;
           letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: rgba(10,10,10,0.42);
+          color: rgba(10,10,10,0.55);
           pointer-events: none;
           white-space: nowrap;
           transition: opacity 0.2s ease;
+          animation: xyInstructPulse 2.4s ease-in-out infinite;
+        }
+        @keyframes xyInstructPulse {
+          0%, 100% { opacity: 0.28; }
+          50%      { opacity: 0.7; }
         }
         .xy-pad:hover  .xy-instruct,
-        .xy-pad:active .xy-instruct { opacity: 0; }
+        .xy-pad:active .xy-instruct { opacity: 0; animation: none; }
+        @media (prefers-reduced-motion: reduce) {
+          .xy-instruct { animation: none; opacity: 0.4; }
+        }
         /* Desktop-default visible; touch-text hidden. Flip on touch devices. */
         .xy-instruct-touch { display: none; }
         @media (hover: none) and (pointer: coarse) {
@@ -1508,6 +1516,78 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           .mixer-panel { grid-template-columns: 1fr; padding: 1.4rem 1.1rem; gap: 1.6rem; }
           .mixer-sliders { min-height: 230px; gap: 0.4rem; }
           .mixer-right { min-width: 0; }
+        }
+
+        /* ───────────────── DARK THEME OVERRIDES ───────────────── */
+        .mix-page[data-theme="dark"] .mixer { background: #0a0a0a; color: #f5f3ee; }
+        .mix-page[data-theme="dark"] .mixer-panel {
+          background: #0a0a0a;
+          border-color: rgba(245,243,238,0.85);
+        }
+        .mix-page[data-theme="dark"] .slider-divider { background: rgba(245,243,238,0.18); }
+        .mix-page[data-theme="dark"] .slider-track {
+          background: #1a1a1a; border-color: rgba(245,243,238,0.65);
+        }
+        .mix-page[data-theme="dark"] .slider-fill { background: #f5f3ee; }
+        .mix-page[data-theme="dark"] .slider-handle { background: #f5f3ee; }
+
+        .mix-page[data-theme="dark"] .crossfader-3 { border-top-color: rgba(245,243,238,0.18); }
+        .mix-page[data-theme="dark"] .cf3-track {
+          background: #1a1a1a; border-color: rgba(245,243,238,0.65);
+        }
+        .mix-page[data-theme="dark"] .cf3-detent { background: rgba(245,243,238,0.45); }
+        .mix-page[data-theme="dark"] .cf3-handle { background: #f5f3ee; }
+
+        .mix-page[data-theme="dark"] .knob {
+          background: #1a1a1a; border-color: rgba(245,243,238,0.65);
+        }
+        .mix-page[data-theme="dark"] .knob::before {
+          background: #0a0a0a; border-color: rgba(245,243,238,0.4);
+        }
+        .mix-page[data-theme="dark"] .knob-indicator::after { background: #f5f3ee; }
+
+        .mix-page[data-theme="dark"] .xy-pad {
+          background: #1a1a1a; border-color: rgba(245,243,238,0.65);
+        }
+        .mix-page[data-theme="dark"] .xy-grid {
+          background:
+            linear-gradient(to right, rgba(245,243,238,0.08) 1px, transparent 1px) 0 0 / 25% 100%,
+            linear-gradient(to bottom, rgba(245,243,238,0.08) 1px, transparent 1px) 0 0 / 100% 25%;
+        }
+        .mix-page[data-theme="dark"] .xy-instruct { color: rgba(245,243,238,0.55); }
+        .mix-page[data-theme="dark"] .xy-dot { border-color: #0a0a0a; }
+
+        .mix-page[data-theme="dark"] .mixer-meta-row {
+          border-top-color: rgba(245,243,238,0.18);
+        }
+        .mix-page[data-theme="dark"] .beat {
+          background: #1a1a1a; border-color: rgba(245,243,238,0.65);
+        }
+        .mix-page[data-theme="dark"] .led-row { border-top-color: rgba(245,243,238,0.18); }
+        .mix-page[data-theme="dark"] .led {
+          background: #1a1a1a; border-color: rgba(245,243,238,0.55);
+        }
+        .mix-page[data-theme="dark"] .led.muted {
+          background: rgba(245,243,238,0.18) !important;
+          border-color: rgba(245,243,238,0.18) !important;
+        }
+        .mix-page[data-theme="dark"] .led-cell:hover .led:not(.muted):not(.lit) {
+          background: rgba(0,255,99,0.18); border-color: var(--accent);
+        }
+
+        .mix-page[data-theme="dark"] .arr-seg { background: rgba(245,243,238,0.12); }
+        .mix-page[data-theme="dark"] .arr-seg-drop { background: rgba(245,243,238,0.22); }
+        .mix-page[data-theme="dark"] .arr-seg-break { background: rgba(245,243,238,0.10); }
+        /* arr-seg-build keeps the green tint */
+
+        .mix-page[data-theme="dark"] .play-btn {
+          background: #f5f3ee; color: #0a0a0a; border-color: #f5f3ee;
+        }
+        .mix-page[data-theme="dark"] .play-btn:hover {
+          background: #0a0a0a; color: #f5f3ee; border-color: #f5f3ee;
+        }
+        .mix-page[data-theme="dark"] .play-btn.is-playing {
+          background: var(--accent); color: #0a0a0a; border-color: var(--accent);
         }
       `}</style>
 

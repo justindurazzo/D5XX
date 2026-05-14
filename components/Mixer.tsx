@@ -1733,7 +1733,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
       </div>
 
       <div className="mixer-footer-row">
-        <p className="mixer-credit mixer-credit-left">DOS Coffee Engineering</p>
+        <p className="mixer-credit mixer-credit-left">DOS Engineering</p>
         <p className="mixer-credit">Made w. love · Durazzo</p>
       </div>
     </section>

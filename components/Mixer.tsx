@@ -1507,8 +1507,8 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           font-size: 0.55rem;
           letter-spacing: 0.28em;
           text-transform: uppercase;
-          color: var(--accent);
-          opacity: 0.7;
+          color: #0a0a0a;
+          opacity: 0.45;
           text-align: right;
         }
 
@@ -1590,10 +1590,13 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         .mix-page[data-theme="dark"] .play-btn.is-playing {
           background: var(--accent); color: #0a0a0a; border-color: var(--accent);
         }
+        .mix-page[data-theme="dark"] .mixer-credit {
+          color: var(--accent); opacity: 0.7;
+        }
       `}</style>
 
       <div className="mixer-head">
-        <h2 className="mixer-headline reveal">PLAY THE NIGHT</h2>
+        <h2 className="mixer-headline reveal">BITS &amp; BOBS</h2>
         <p className="mixer-sub reveal reveal-d1">
           Slide the fader from Lafayette to The World. Mix the sliders. Five knobs, three scenes, infinite versions of the same song.
         </p>

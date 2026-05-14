@@ -121,6 +121,11 @@ function threeBlend(s: number): [number, number, number] {
 const jitter = () => (Math.random() - 0.5) * 0.008
 const velJ   = (v: number) => v * (0.9 + Math.random() * 0.2)
 
+// Built once at module load. Reused for every bass note's per-voice waveshaper.
+// (Module-level so its inferred type is Float32Array<ArrayBuffer>, which is what
+// WaveShaperNode.curve expects — a ref-typed Float32Array widens to ArrayBufferLike.)
+const BASS_DRIVE_CURVE = makeTanhCurve(2.8)
+
 export default function Mixer() {
   const [playing, setPlaying] = useState(false)
   const [sliders, setSliders] = useState<Sliders>(INITIAL_SLIDERS)
@@ -172,11 +177,10 @@ export default function Mixer() {
   const userFilterRef   = useRef<BiquadFilterNode | null>(null)
   const bassSidechainRef = useRef<GainNode | null>(null)
   const mutesRef        = useRef<Record<MuteKey, boolean>>(mutes)
+  // (bassDriveCurveRef removed — BASS_DRIVE_CURVE module const used instead, see top of file)
 
   // Activity LED DOM refs — direct manipulation avoids React re-render churn on every voice fire.
   const ledRefs = useRef<Record<string, HTMLDivElement | null>>({})
-
-  const bassDriveCurveRef = useRef<Float32Array | null>(null)
 
   const slidersRef      = useRef<Sliders>(sliders)
   const bpmRef          = useRef<number>(bpm)
@@ -349,8 +353,6 @@ export default function Mixer() {
     const bassBus = ctx.createGain(); bassBus.gain.value = 0.62
     bassBus.connect(bassSat); bassSat.connect(bassSidechain); bassSidechain.connect(sceneWall)
     bassBusRef.current = bassBus
-
-    bassDriveCurveRef.current = makeTanhCurve(2.8)
 
     const melSat = ctx.createWaveShaper()
     melSat.curve = makeTanhCurve(1.6)
@@ -585,7 +587,7 @@ export default function Mixer() {
     lp.frequency.exponentialRampToValueAtTime(cutoff, t + 0.12)
 
     const drive = ctx.createWaveShaper()
-    drive.curve = bassDriveCurveRef.current!
+    drive.curve = BASS_DRIVE_CURVE
     drive.oversample = '2x'
 
     const amp = ctx.createGain()
@@ -602,7 +604,7 @@ export default function Mixer() {
 
   // Rhodes/electric piano: additive integer harmonics (not FM). Slight per-partial detuning gives
   // the "chorused" warmth of a real EP; per-partial decay times mean it dies naturally.
-  const rhodes = useCallback((t: number, freqs: number[], vel: number) => {
+  const rhodes = useCallback((t: number, freqs: readonly number[], vel: number) => {
     const ctx = audioCtxRef.current!
     const bus = melodyBusRef.current!
     const partials: Array<{ mult: number; gain: number; decay: number }> = [

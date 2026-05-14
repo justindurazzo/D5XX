@@ -1535,11 +1535,14 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
             overscroll-behavior: contain;
             max-width: 100%;
           }
-          /* Slider grid: 5 columns of sliders only; divider + knobs flow below as full-width rows */
+          /* Slider grid: 5 columns of sliders only; divider + knobs flow below as full-width rows.
+             Explicit row height for the slider row so they don't compress when divider+knobs
+             eat into the grid's auto-sized space. */
           .mixer-sliders {
             grid-template-columns: repeat(5, 1fr);
-            min-height: 240px;
+            grid-template-rows: 230px auto auto;
             gap: 0.65rem;
+            min-height: 0;
           }
           .slider-track { width: 32px; }
           .slider-handle { left: -10px; right: -10px; height: 18px; }

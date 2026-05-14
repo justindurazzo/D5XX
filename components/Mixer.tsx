@@ -1381,6 +1381,29 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         .xy-corner-x { bottom: 4px; right: 6px; }
         .xy-corner-y { top: 4px; left: 6px; writing-mode: vertical-rl; }
         .xy-pad:focus-visible { outline: 1px solid var(--accent); outline-offset: 2px; }
+
+        /* Centered "click & drag" instruction. Dims away when the user gets close (hover/active). */
+        .xy-instruct {
+          position: absolute;
+          top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          font-family: 'DM Mono', monospace;
+          font-size: 0.58rem;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(10,10,10,0.42);
+          pointer-events: none;
+          white-space: nowrap;
+          transition: opacity 0.2s ease;
+        }
+        .xy-pad:hover  .xy-instruct,
+        .xy-pad:active .xy-instruct { opacity: 0; }
+        /* Desktop-default visible; touch-text hidden. Flip on touch devices. */
+        .xy-instruct-touch { display: none; }
+        @media (hover: none) and (pointer: coarse) {
+          .xy-instruct-mouse { display: none; }
+          .xy-instruct-touch { display: inline; }
+        }
         .knob-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.6; }
         .knob { width: 72px; height: 72px; border-radius: 50%; border: 1px solid #0a0a0a; background: #f5f3ee; position: relative; touch-action: none; cursor: none; }
         .knob::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: #fff; border: 1px solid rgba(10,10,10,0.4); }
@@ -1470,6 +1493,15 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         }
 
         .mixer-footer { margin-top: 0.5rem; font-family: 'DM Mono', monospace; font-size: 0.55rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.45; }
+        .mixer-credit {
+          margin: 1rem 0 0;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.55rem;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          opacity: 0.32;
+          text-align: right;
+        }
 
         @media (max-width: 900px) {
           .mixer { padding: 3.5rem 1.25rem 4.5rem; }
@@ -1607,6 +1639,8 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           </div>
         </div>
       </div>
+
+      <p className="mixer-credit">Made w. love · Durazzo</p>
     </section>
   )
 }
@@ -1698,6 +1732,10 @@ function XYPad({
         <div className="xy-dot" style={{ left: `${x * 100}%`, bottom: `${y * 100}%` }} />
         <span className="xy-corner xy-corner-x">{labelX}</span>
         <span className="xy-corner xy-corner-y">{labelY}</span>
+        <span className="xy-instruct" aria-hidden="true">
+          <span className="xy-instruct-mouse">Click &amp; Drag</span>
+          <span className="xy-instruct-touch">Touch &amp; Drag</span>
+        </span>
         {nudge && <span className="xy-hint" aria-hidden="true">drag me</span>}
       </div>
     </div>

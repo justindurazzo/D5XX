@@ -76,11 +76,11 @@ export default function MixGate() {
           pointer-events: none;
         }
 
-        /* ─── The big "P" key ─── */
+        /* ─── The big "P" key (matches the inline <kbd> below: white bg, black border) ─── */
         .p-key {
-          background: #0a0a0a;
-          color: #f5f3ee;
-          border: none;
+          background: #fff;
+          color: #0a0a0a;
+          border: 2px solid #0a0a0a;
           font-family: 'Archivo Black', sans-serif;
           font-size: clamp(120px, 18vw, 220px);
           line-height: 1;
@@ -125,7 +125,7 @@ export default function MixGate() {
             box-shadow:
               0 14px 0 0 rgba(10,10,10,0.85),
               0 18px 38px rgba(10,10,10,0.18),
-              0 0 60px rgba(0,255,99,0.18);
+              0 0 80px rgba(0,255,99,0.32);
           }
         }
         .p-key:focus-visible {

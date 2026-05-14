@@ -89,6 +89,19 @@ function makeTanhCurve(amount: number, samples = 2048) {
   return curve
 }
 
+// Bit-crusher curve: quantizes amplitude to 2^bits steps. 16 = effectively transparent;
+// 3 = obvious lo-fi crunch. Combined with a lowpass downstream (to fake aliasing/SR
+// reduction), this gives a convincing "cassette / old sampler" feel.
+function makeBitCrushCurve(bits: number, samples = 4096) {
+  const step = 2 / Math.pow(2, bits)
+  const curve = new Float32Array(samples)
+  for (let i = 0; i < samples; i++) {
+    const x = (i / samples) * 2 - 1
+    curve[i] = Math.round(x / step) * step
+  }
+  return curve
+}
+
 function makePinkNoiseBuffer(ctx: AudioContext, seconds: number) {
   const sr = ctx.sampleRate
   const len = Math.floor(sr * seconds)
@@ -147,6 +160,8 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
   const [filterPct, setFilterPct] = useState(100)
   // Reverb wet (0..1). Default matches the previous fixed value so first play sounds the same.
   const [reverbAmt, setReverbAmt] = useState(0.7)
+  // Lo-fi bit crusher (0..100; 0 = transparent, 100 = obvious crunch).
+  const [crushPct, setCrushPct] = useState(0)
   // One-shot "drag me" prompt on the X-Y pad after autoplay-reveal.
   const [nudgeXY, setNudgeXY] = useState(false)
 
@@ -184,6 +199,8 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
   const reverbWetRef    = useRef<GainNode | null>(null)
   const mixFilterRef    = useRef<BiquadFilterNode | null>(null)
   const userFilterRef   = useRef<BiquadFilterNode | null>(null)
+  const lofiCrushRef    = useRef<WaveShaperNode | null>(null)
+  const lofiLowpassRef  = useRef<BiquadFilterNode | null>(null)
   const bassSidechainRef = useRef<GainNode | null>(null)
   const mutesRef        = useRef<Record<MuteKey, boolean>>(mutes)
   // (bassDriveCurveRef removed — BASS_DRIVE_CURVE module const used instead, see top of file)
@@ -209,6 +226,20 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
     if (!ctx || !node) return
     node.gain.setTargetAtTime(reverbAmt, ctx.currentTime, 0.04)
   }, [reverbAmt])
+
+  // Lo-fi crush: bit-depth quantization + lowpass cutoff that closes as crush rises.
+  // 0% = 16-bit / 18kHz (transparent); 100% = 3-bit / 2.4kHz (cassette / SP-303 territory).
+  useEffect(() => {
+    const ctx = audioCtxRef.current
+    const shaper = lofiCrushRef.current
+    const lp = lofiLowpassRef.current
+    if (!ctx || !shaper || !lp) return
+    const v = crushPct / 100
+    const bits = 16 - v * 13
+    shaper.curve = makeBitCrushCurve(bits)
+    const cutoff = 18000 * Math.pow(2400 / 18000, v) // exponential 18kHz → 2.4kHz
+    lp.frequency.setTargetAtTime(cutoff, ctx.currentTime, 0.04)
+  }, [crushPct])
 
   // Filter macro: exponential map of 0..100 to 80Hz..18kHz. Q opens with the cut for resonant
   // DJ-sweep character (the classic "filter brings out the howl as you close it").
@@ -284,9 +315,22 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
     userFilter.frequency.value = 80 * Math.pow(225, 1.0) // 18000 Hz at default
     userFilterRef.current = userFilter
 
+    // Lo-fi crush stage at the end of the chain (we WANT the aliasing artifacts from
+    // bit quantization, so oversample stays at 'none'). 16-bit / 18kHz = pass-through.
+    const lofiCrush = ctx.createWaveShaper()
+    lofiCrush.curve = makeBitCrushCurve(16)
+    lofiCrush.oversample = 'none'
+    const lofiLowpass = ctx.createBiquadFilter()
+    lofiLowpass.type = 'lowpass'
+    lofiLowpass.Q.value = 0.6
+    lofiLowpass.frequency.value = 18000
+    lofiCrushRef.current = lofiCrush
+    lofiLowpassRef.current = lofiLowpass
+
     const master = ctx.createGain()
     master.gain.value = 0.72
-    master.connect(mixFilter); mixFilter.connect(userFilter); userFilter.connect(masterSat); masterSat.connect(comp); comp.connect(ctx.destination)
+    master.connect(mixFilter); mixFilter.connect(userFilter); userFilter.connect(masterSat); masterSat.connect(comp)
+    comp.connect(lofiCrush); lofiCrush.connect(lofiLowpass); lofiLowpass.connect(ctx.destination)
     masterRef.current = master
 
     // Scene buses (equal-power initial weights)
@@ -1678,6 +1722,15 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
                 max={100}
                 step={1}
                 onChange={(v) => setFilterPct(Math.round(v))}
+                suffix="%"
+              />
+              <Knob
+                label="Crush"
+                value={crushPct}
+                min={0}
+                max={100}
+                step={1}
+                onChange={(v) => setCrushPct(Math.round(v))}
                 suffix="%"
               />
             </div>

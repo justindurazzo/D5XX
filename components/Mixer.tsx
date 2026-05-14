@@ -1734,7 +1734,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
 
       <div className="mixer-footer-row">
         <p className="mixer-credit mixer-credit-left">DOS Engineering</p>
-        <p className="mixer-credit">Made w. love · Durazzo</p>
+        <p className="mixer-credit">W. love, Durazzo</p>
       </div>
     </section>
   )

@@ -231,7 +231,7 @@ export default function MixGate() {
         className={`mixer-stage${revealed ? ' mixer-in' : ''}`}
         aria-hidden={!revealed}
       >
-        <Mixer />
+        <Mixer autoplay={revealed} autoplayDelay={500} />
       </div>
     </main>
   )

@@ -126,7 +126,14 @@ const velJ   = (v: number) => v * (0.9 + Math.random() * 0.2)
 // WaveShaperNode.curve expects — a ref-typed Float32Array widens to ArrayBufferLike.)
 const BASS_DRIVE_CURVE = makeTanhCurve(2.8)
 
-export default function Mixer() {
+type MixerProps = {
+  /** When true, the mixer starts playing automatically (with a master gain fade-in). */
+  autoplay?: boolean
+  /** Delay (ms) between autoplay becoming true and the audio actually starting. */
+  autoplayDelay?: number
+}
+
+export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerProps = {}) {
   const [playing, setPlaying] = useState(false)
   const [sliders, setSliders] = useState<Sliders>(INITIAL_SLIDERS)
   const [bpm, setBpm] = useState(INITIAL_BPM)
@@ -140,6 +147,8 @@ export default function Mixer() {
   const [filterPct, setFilterPct] = useState(100)
   // Reverb wet (0..1). Default matches the previous fixed value so first play sounds the same.
   const [reverbAmt, setReverbAmt] = useState(0.7)
+  // One-shot "drag me" prompt on the X-Y pad after autoplay-reveal.
+  const [nudgeXY, setNudgeXY] = useState(false)
 
   // Click-to-mute state for the activity LEDs. Categories map to multiple underlying voices.
   type MuteKey = 'KICK' | 'CLAP' | 'HAT' | 'BASS' | 'LEAD' | 'PAD'
@@ -1136,10 +1145,20 @@ export default function Mixer() {
     }
   }, [scheduleStep])
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (opts: { fadeIn?: boolean } = {}) => {
     initAudio()
     const ctx = audioCtxRef.current!
+    const m = masterRef.current
+    // If fading in, snap master to ~0 BEFORE resuming so the first transient isn't full-volume.
+    if (opts.fadeIn && m) {
+      m.gain.cancelScheduledValues(ctx.currentTime)
+      m.gain.setValueAtTime(0.0001, ctx.currentTime)
+    }
     if (ctx.state === 'suspended') await ctx.resume()
+    if (opts.fadeIn && m) {
+      // Smooth exponential ramp up to the normal master gain over ~1.6s.
+      m.gain.exponentialRampToValueAtTime(0.72, ctx.currentTime + 1.6)
+    }
     nextNoteTimeRef.current = ctx.currentTime + 0.06
     stepRef.current = 0
     if (schedulerRef.current) clearInterval(schedulerRef.current)
@@ -1154,6 +1173,21 @@ export default function Mixer() {
     setBeat(-1)
     setArrBarUI(-1)
   }, [])
+
+  // ───── Autoplay (when revealed by parent gate) ─────
+  // Fires once: when `autoplay` flips true, schedule start(...) with a master fade-in, then
+  // light up the X-Y pad nudge so the user notices the chaos pad.
+  useEffect(() => {
+    if (!autoplay) return
+    const playT = window.setTimeout(() => { start({ fadeIn: true }) }, autoplayDelay)
+    const nudgeOn  = window.setTimeout(() => setNudgeXY(true),  autoplayDelay + 1300)
+    const nudgeOff = window.setTimeout(() => setNudgeXY(false), autoplayDelay + 4900)
+    return () => {
+      clearTimeout(playT)
+      clearTimeout(nudgeOn)
+      clearTimeout(nudgeOff)
+    }
+  }, [autoplay, autoplayDelay, start])
 
   useEffect(() => () => {
     if (schedulerRef.current) clearInterval(schedulerRef.current)
@@ -1305,6 +1339,38 @@ export default function Mixer() {
           box-shadow: 0 0 0 1px rgba(0,255,99,0.25), 0 0 10px rgba(0,255,99,0.45);
         }
         .xy-pad:active .xy-dot { width: 18px; height: 18px; }
+
+        /* ─── XY nudge — fires once after autoplay-reveal to say "drag me" ─── */
+        .xy-nudge .xy-pad {
+          animation: xyPadPulse 1.4s ease-in-out 3 both;
+        }
+        .xy-nudge .xy-dot {
+          animation: xyDotPulse 1.4s ease-in-out 3 both;
+        }
+        @keyframes xyPadPulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,99,0); }
+          50%       { box-shadow: 0 0 0 4px rgba(0,255,99,0.22), 0 0 32px 4px rgba(0,255,99,0.35); }
+        }
+        @keyframes xyDotPulse {
+          0%, 100% { transform: translate(-50%, 50%) scale(1); }
+          30%      { transform: translate(-50%, 50%) scale(1.55); }
+          70%      { transform: translate(-50%, 50%) scale(0.92); }
+        }
+        .xy-hint {
+          position: absolute;
+          top: 8px; right: 10px;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.55rem;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--accent);
+          pointer-events: none;
+          animation: xyHintIn 4.2s ease-in-out both;
+        }
+        @keyframes xyHintIn {
+          0%, 100% { opacity: 0; transform: translateY(2px); }
+          20%, 82% { opacity: 1; transform: translateY(0); }
+        }
         .xy-corner {
           position: absolute;
           font-family: 'DM Mono', monospace; font-size: 0.5rem;
@@ -1508,6 +1574,7 @@ export default function Mixer() {
             }}
             labelX="Filter"
             labelY="Reverb"
+            nudge={nudgeXY}
           />
 
           <div className="mixer-meta-row">
@@ -1583,11 +1650,12 @@ function SliderColumn({
 }
 
 function XYPad({
-  x, y, onChange, labelX, labelY,
+  x, y, onChange, labelX, labelY, nudge,
 }: {
   x: number; y: number;
   onChange: (nx: number, ny: number) => void;
   labelX: string; labelY: string;
+  nudge?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const update = (clientX: number, clientY: number) => {
@@ -1600,7 +1668,7 @@ function XYPad({
     onChange(nx, ny)
   }
   return (
-    <div className="xy-pad-wrap">
+    <div className={`xy-pad-wrap${nudge ? ' xy-nudge' : ''}`}>
       <div className="xy-pad-head">
         <span className="xy-pad-name">XY · {labelX} × {labelY}</span>
         <span className="xy-pad-read">{Math.round(x * 100).toString().padStart(2, '0')} · {Math.round(y * 100).toString().padStart(2, '0')}</span>
@@ -1630,6 +1698,7 @@ function XYPad({
         <div className="xy-dot" style={{ left: `${x * 100}%`, bottom: `${y * 100}%` }} />
         <span className="xy-corner xy-corner-x">{labelX}</span>
         <span className="xy-corner xy-corner-y">{labelY}</span>
+        {nudge && <span className="xy-hint" aria-hidden="true">drag me</span>}
       </div>
     </div>
   )

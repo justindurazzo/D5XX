@@ -1588,10 +1588,10 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
             gap: 0.65rem;
             min-height: 0;
           }
-          .slider-track { width: 32px; }
-          .slider-handle { left: -5px; right: -5px; height: 16px; }
+          .slider-track { width: 20px; }
+          .slider-handle { left: -8px; right: -8px; height: 16px; }
           .slider-track:hover  .slider-handle,
-          .slider-track:active .slider-handle { left: -10px; right: -10px; height: 22px; }
+          .slider-track:active .slider-handle { left: -12px; right: -12px; height: 22px; }
           .slider-divider {
             grid-column: 1 / -1;
             height: 1px;

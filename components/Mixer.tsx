@@ -1289,13 +1289,13 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         /* No position transitions — these were the source of the "sticky" lag. */
         .slider-fill { position: absolute; left: 0; right: 0; bottom: 0; background: #0a0a0a; }
         .slider-handle {
-          position: absolute; left: -8px; right: -8px; height: 14px;
+          position: absolute; left: -3px; right: -3px; height: 14px;
           background: #0a0a0a; transform: translateY(50%);
           pointer-events: none;
           transition: width 0.09s ease, height 0.09s ease, left 0.09s ease, right 0.09s ease;
         }
-        .slider-track:hover  .slider-handle { left: -10px; right: -10px; height: 16px; }
-        .slider-track:active .slider-handle { left: -12px; right: -12px; height: 20px; }
+        .slider-track:hover  .slider-handle { left: -6px; right: -6px; height: 16px; }
+        .slider-track:active .slider-handle { left: -10px; right: -10px; height: 22px; }
         .slider-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; }
 
         /* ─── Crossfader (Lafayette | Wall Street | The World) ─── */
@@ -1589,9 +1589,9 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
             min-height: 0;
           }
           .slider-track { width: 32px; }
-          .slider-handle { left: -10px; right: -10px; height: 18px; }
+          .slider-handle { left: -5px; right: -5px; height: 16px; }
           .slider-track:hover  .slider-handle,
-          .slider-track:active .slider-handle { left: -14px; right: -14px; height: 22px; }
+          .slider-track:active .slider-handle { left: -10px; right: -10px; height: 22px; }
           .slider-divider {
             grid-column: 1 / -1;
             height: 1px;

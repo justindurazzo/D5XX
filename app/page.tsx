@@ -128,6 +128,75 @@ export default function Home() {
     return () => observer.disconnect()
   }, [])
 
+  // Cursor-parallax on hero. Maps mouse position over #hero to CSS vars --mx/--my on each
+  // .hero-stack span. Each row gets a different depth (3/6/9px max) so the type reads as
+  // layered, not a flat poster. Lerps via rAF for organic settle.
+  useEffect(() => {
+    const hero = document.getElementById('hero')
+    if (!hero) return
+    const spans = hero.querySelectorAll<HTMLElement>('.hero-stack span')
+    if (!spans.length) return
+
+    let targetX = 0, targetY = 0, currentX = 0, currentY = 0
+    let rafId = 0
+
+    const onMove = (e: MouseEvent) => {
+      const rect = hero.getBoundingClientRect()
+      targetX = (e.clientX - rect.left) / rect.width - 0.5  // -0.5..+0.5
+      targetY = (e.clientY - rect.top) / rect.height - 0.5
+    }
+    const onLeave = () => { targetX = 0; targetY = 0 }
+
+    const tick = () => {
+      currentX += (targetX - currentX) * 0.08
+      currentY += (targetY - currentY) * 0.08
+      spans.forEach((span, i) => {
+        const depth = (i + 1) * 6  // row 1: 6px max, row 2: 12px, row 3: 18px
+        span.style.setProperty('--mx', `${currentX * depth}px`)
+        span.style.setProperty('--my', `${currentY * depth}px`)
+      })
+      rafId = requestAnimationFrame(tick)
+    }
+
+    hero.addEventListener('mousemove', onMove)
+    hero.addEventListener('mouseleave', onLeave)
+    rafId = requestAnimationFrame(tick)
+    return () => {
+      hero.removeEventListener('mousemove', onMove)
+      hero.removeEventListener('mouseleave', onLeave)
+      cancelAnimationFrame(rafId)
+    }
+  }, [])
+
+  // Scroll-driven proximity scale on the location ladder. Each .loc-step element scales up
+  // and brightens as it passes through viewport center, scales back down past it. Page reads
+  // as a slow zoom inward toward "Hell · see you there" rather than a flat scroll-spy.
+  useEffect(() => {
+    const steps = document.querySelectorAll<HTMLElement>('.loc-step')
+    if (!steps.length) return
+    let rafId = 0
+
+    const tick = () => {
+      const vh = window.innerHeight
+      const center = vh / 2
+      steps.forEach(step => {
+        const rect = step.getBoundingClientRect()
+        if (rect.bottom < -100 || rect.top > vh + 100) {
+          step.style.setProperty('--prox', '1')
+          return
+        }
+        const stepCenter = rect.top + rect.height / 2
+        const distance = Math.abs(stepCenter - center)
+        const normalized = Math.min(1, distance / (vh * 0.45))
+        const scale = 1 + (1 - normalized) * 0.12 // 1.0 (far) → 1.12 (center)
+        step.style.setProperty('--prox', scale.toFixed(3))
+      })
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
@@ -299,7 +368,12 @@ export default function Home() {
         .hero-stack span:nth-child(2) { animation-delay: 0.28s; }
         .hero-stack span:nth-child(3) { animation-delay: 0.46s; }
         @keyframes heroIn {
-          to { opacity: 1; filter: blur(0); transform: scaleX(1.15) translateX(0); }
+          to {
+            opacity: 1;
+            filter: blur(0);
+            /* End state uses --mx/--my so cursor parallax composes with the reveal */
+            transform: scaleX(1.15) translate(var(--mx, 0px), var(--my, 0px));
+          }
         }
 
         .hero-right {
@@ -776,6 +850,11 @@ export default function Home() {
             transform 0.75s cubic-bezier(0.16,1,0.3,1);
         }
         .reveal.visible { opacity: 1; transform: translateY(0); }
+        /* Location ladder: after reveal, transform composes scaleX(1.1) with the JS-driven
+           proximity scale (--prox). Higher specificity than plain .reveal.visible so this wins. */
+        .loc-step.reveal.visible {
+          transform: scaleX(1.1) scale(var(--prox, 1));
+        }
         .reveal-d1 { transition-delay: 0.06s; }
         .reveal-d2 { transition-delay: 0.12s; }
         .reveal-d3 { transition-delay: 0.2s; }

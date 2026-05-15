@@ -59,6 +59,19 @@ export default function Home() {
   }, [])
 
   // ────── Location ladder scroll-spy (active = currently centered in viewport) ──────
+  useEffect(() => {
+    const steps = document.querySelectorAll<HTMLElement>('.loc-step')
+    if (!steps.length) return
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => {
+        if (e.isIntersecting) e.target.classList.add('lit')
+      }),
+      { rootMargin: '-40% 0px -40% 0px', threshold: 0 }
+    )
+    steps.forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
+
   // ────── Magnetic submit button ──────
   useEffect(() => {
     const btn = submitRef.current
@@ -155,6 +168,34 @@ export default function Home() {
     }
   }, [])
 
+  // Scroll-driven proximity scale on the location ladder. Each .loc-step element scales up
+  // and brightens as it passes through viewport center, scales back down past it. Page reads
+  // as a slow zoom inward toward "Hell · see you there" rather than a flat scroll-spy.
+  useEffect(() => {
+    const steps = document.querySelectorAll<HTMLElement>('.loc-step')
+    if (!steps.length) return
+    let rafId = 0
+
+    const tick = () => {
+      const vh = window.innerHeight
+      const center = vh / 2
+      steps.forEach(step => {
+        const rect = step.getBoundingClientRect()
+        if (rect.bottom < -100 || rect.top > vh + 100) {
+          step.style.setProperty('--prox', '1')
+          return
+        }
+        const stepCenter = rect.top + rect.height / 2
+        const distance = Math.abs(stepCenter - center)
+        const normalized = Math.min(1, distance / (vh * 0.45))
+        const scale = 1 + (1 - normalized) * 0.12 // 1.0 (far) → 1.12 (center)
+        step.style.setProperty('--prox', scale.toFixed(3))
+      })
+      rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -186,6 +227,11 @@ export default function Home() {
   }
 
   const disabled = formState === 'submitting' || formState === 'success'
+
+  const marqueeItems = [
+    'D5XX', '·', '20 YEARS OF DROGA5', '·', 'JUNE 9', '·', 'THE BOX · LES NYC', '·',
+    '7PM — LATE', '·', 'INVITATION ONLY', '·', 'CELEBRATE WITH A MUSIC NIGHT TO REMEMBER', '·',
+  ]
 
   return (
     <>
@@ -870,6 +916,60 @@ export default function Home() {
         </div>
       </section>
 
+      {/* MARQUEE */}
+      <div className="marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[...Array(3)].map((_, copy) => (
+            marqueeItems.map((item, i) => (
+              <span key={`${copy}-${i}`} className={item === '·' ? 'dim' : ''}>{item}</span>
+            ))
+          ))}
+        </div>
+      </div>
+
+      {/* EVENT */}
+      <section id="event" className="event">
+        <div className="event-bg-marks">D5XX D5XX</div>
+        <div className="event-left">
+          <h2 className="event-headline reveal">THE EVENT</h2>
+          <p className="event-body reveal reveal-d1">
+            Twenty years of making it matter. An invitation-only evening
+            celebrating the decades of work, people, and the ideas that defined
+            a generation of creativity. Past and present Drogans, clients, and
+            collaborators — together for one night.
+          </p>
+        </div>
+        <div className="event-right">
+          <div className="event-detail reveal reveal-d2">
+            <p className="label">Date</p>
+            <p className="value" data-scramble="06.09">06.09</p>
+          </div>
+          <div className="event-detail reveal reveal-d3">
+            <p className="label">Location</p>
+            <p className="value">THE BOX</p>
+          </div>
+          <div className="event-detail reveal reveal-d4">
+            <p className="label">Time</p>
+            <p className="value">7PM — LATE</p>
+          </div>
+        </div>
+      </section>
+
+      {/* PHASED LOCATION REVEAL */}
+      <section id="location" className="location">
+        <p className="mono-label location-label reveal">You are here</p>
+        <div className="location-ladder">
+          <div className="loc-step reveal">EARTH</div>
+          <div className="loc-step reveal reveal-d1">NORTH AMERICA</div>
+          <div className="loc-step reveal reveal-d2">UNITED STATES</div>
+          <div className="loc-step reveal reveal-d3">NEW YORK CITY</div>
+          <div className="loc-step reveal reveal-d4">MANHATTAN</div>
+          <div className="loc-step reveal reveal-d5">LOWER EAST SIDE</div>
+          <div className="loc-step reveal reveal-d6">THE BOX</div>
+          <div className="loc-step final reveal reveal-d7">HELL — SEE YOU THERE</div>
+        </div>
+      </section>
+
       {/* RSVP */}
       <section id="rsvp" className="rsvp">
         <div className="rsvp-left">
@@ -954,34 +1054,6 @@ export default function Home() {
               </div>
             )}
           </form>
-        </div>
-      </section>
-
-      {/* EVENT */}
-      <section id="event" className="event">
-        <div className="event-bg-marks">D5XX D5XX</div>
-        <div className="event-left">
-          <h2 className="event-headline reveal">THE EVENT</h2>
-          <p className="event-body reveal reveal-d1">
-            Twenty years of making it matter. An invitation-only evening
-            celebrating the decades of work, people, and the ideas that defined
-            a generation of creativity. Past and present Drogans, clients, and
-            collaborators — together for one night.
-          </p>
-        </div>
-        <div className="event-right">
-          <div className="event-detail reveal reveal-d2">
-            <p className="label">Date</p>
-            <p className="value" data-scramble="06.09">06.09</p>
-          </div>
-          <div className="event-detail reveal reveal-d3">
-            <p className="label">Location</p>
-            <p className="value">THE BOX</p>
-          </div>
-          <div className="event-detail reveal reveal-d4">
-            <p className="label">Time</p>
-            <p className="value">7PM — LATE</p>
-          </div>
         </div>
       </section>
 

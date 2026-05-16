@@ -134,10 +134,23 @@ function threeBlend(s: number): [number, number, number] {
 const jitter = () => (Math.random() - 0.5) * 0.008
 const velJ   = (v: number) => v * (0.9 + Math.random() * 0.2)
 
+// Slow random LFO → detune. Gives sustained voices a subtle pitch "breathing" so they
+// don't sit dead-still — the trick that separates a warm synth from a toy one.
+function attachDrift(ctx: AudioContext, targets: AudioParam[], t: number, stopAt: number, cents: number) {
+  const lfo = ctx.createOscillator()
+  lfo.type = 'sine'
+  lfo.frequency.value = 0.15 + Math.random() * 0.35
+  const depth = ctx.createGain(); depth.gain.value = cents
+  lfo.connect(depth)
+  targets.forEach(p => depth.connect(p))
+  lfo.start(t)
+  lfo.stop(stopAt)
+}
+
 // Built once at module load. Reused for every bass note's per-voice waveshaper.
 // (Module-level so its inferred type is Float32Array<ArrayBuffer>, which is what
 // WaveShaperNode.curve expects — a ref-typed Float32Array widens to ArrayBufferLike.)
-const BASS_DRIVE_CURVE = makeTanhCurve(2.8)
+const BASS_DRIVE_CURVE = makeTanhCurve(1.7)
 
 type MixerProps = {
   /** When true, the mixer starts playing automatically (with a master gain fade-in). */
@@ -626,16 +639,19 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
     const subAmp = ctx.createGain()
     subAmp.gain.setValueAtTime(0.0001, t)
     subAmp.gain.exponentialRampToValueAtTime(vel * 0.6, t + 0.005)
-    subAmp.gain.exponentialRampToValueAtTime(0.0001, t + 0.42)
+    subAmp.gain.exponentialRampToValueAtTime(0.0001, t + 0.52)
     sub.connect(subAmp); subAmp.connect(bus)
 
+    // Two saws + a triangle for body. Triangle (not square) keeps the harmonics warm
+    // rather than buzzy; a slow LFO drifts both saws a couple cents for analog instability.
     const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = hz
     const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = hz * (1.005 + Math.random() * 0.004)
-    const sq = ctx.createOscillator(); sq.type = 'square'; sq.frequency.value = hz
-    const sqg = ctx.createGain(); sqg.gain.value = 0.32
-    sq.connect(sqg)
+    const tri = ctx.createOscillator(); tri.type = 'triangle'; tri.frequency.value = hz
+    const trig = ctx.createGain(); trig.gain.value = 0.26
+    tri.connect(trig)
+    attachDrift(ctx, [o1.detune, o2.detune], t, t + 0.56, 2.5)
 
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 10
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5
     lp.frequency.setValueAtTime(cutoff * 3, t)
     lp.frequency.exponentialRampToValueAtTime(cutoff, t + 0.12)
 
@@ -646,13 +662,13 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
     amp.gain.exponentialRampToValueAtTime(vel * 0.42, t + 0.012)
-    amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.42)
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.52)
 
-    o1.connect(lp); o2.connect(lp); sqg.connect(lp)
+    o1.connect(lp); o2.connect(lp); trig.connect(lp)
     lp.connect(drive); drive.connect(amp); amp.connect(bus)
 
-    sub.start(t); o1.start(t); o2.start(t); sq.start(t)
-    sub.stop(t + 0.45); o1.stop(t + 0.46); o2.stop(t + 0.46); sq.stop(t + 0.46)
+    sub.start(t); o1.start(t); o2.start(t); tri.start(t)
+    sub.stop(t + 0.55); o1.stop(t + 0.56); o2.stop(t + 0.56); tri.stop(t + 0.56)
   }, [])
 
   // Rhodes/electric piano: additive integer harmonics (not FM). Slight per-partial detuning gives
@@ -668,12 +684,14 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
     ]
     freqs.forEach((hz, i) => {
       const mix = ctx.createGain(); mix.gain.value = 0.18
+      const driftTargets: AudioParam[] = []
       partials.forEach(({ mult, gain, decay }) => {
         const o = ctx.createOscillator()
         o.type = 'sine'
         // Tiny random detune per partial — warmth, like a slightly out-of-tune instrument
         const detune = 1 + (Math.random() - 0.5) * 0.0008
         o.frequency.value = hz * mult * detune
+        driftTargets.push(o.detune)
         const pg = ctx.createGain()
         pg.gain.setValueAtTime(0.0001, t)
         pg.gain.exponentialRampToValueAtTime(gain, t + 0.014) // 14ms attack — soft
@@ -681,6 +699,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         o.connect(pg); pg.connect(mix)
         o.start(t); o.stop(t + decay + 0.05)
       })
+      attachDrift(ctx, driftTargets, t, t + 1.3, 2.5)
       const amp = ctx.createGain(); amp.gain.value = vel
       const pan = ((i / Math.max(1, freqs.length - 1)) - 0.5) * 0.7
       const sp = ctx.createStereoPanner(); sp.pan.value = pan
@@ -785,12 +804,14 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
       { mult: 4.1, gain: 0.08, decay: 0.22 }, // slight inharmonicity = woody character
     ]
     const mix = ctx.createGain(); mix.gain.value = 0.28
+    const driftTargets: AudioParam[] = []
     partials.forEach(({ mult, gain, decay }) => {
       const o = ctx.createOscillator()
       o.type = 'sine'
       // Tiny pitch settle (0.3% drop over 30ms) — the wood "give"
       o.frequency.setValueAtTime(hz * mult * 1.003, t)
       o.frequency.exponentialRampToValueAtTime(hz * mult, t + 0.03)
+      driftTargets.push(o.detune)
       const pg = ctx.createGain()
       pg.gain.setValueAtTime(0.0001, t)
       pg.gain.exponentialRampToValueAtTime(gain, t + 0.008) // 8ms attack — softer than FM
@@ -798,6 +819,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
       o.connect(pg); pg.connect(mix)
       o.start(t); o.stop(t + decay + 0.05)
     })
+    attachDrift(ctx, driftTargets, t, t + 0.8, 2)
     const amp = ctx.createGain(); amp.gain.value = vel
     const sp = ctx.createStereoPanner(); sp.pan.value = pan
     mix.connect(amp); amp.connect(sp); sp.connect(atmosBusRef.current!)
@@ -824,15 +846,18 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
     vib.start(t + 0.08) // delayed onset — natural "settle into vibrato"
     vib.stop(t + 0.65)
 
+    const driftTargets: AudioParam[] = []
     partials.forEach(({ mult, gain }) => {
       const o = ctx.createOscillator()
       o.type = 'sine'
       o.frequency.value = hz * mult
       vibDepth.connect(o.frequency)
+      driftTargets.push(o.detune)
       const pg = ctx.createGain(); pg.gain.value = gain
       o.connect(pg); pg.connect(mix)
       o.start(t); o.stop(t + 0.6)
     })
+    attachDrift(ctx, driftTargets, t, t + 0.62, 2)
 
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
@@ -856,6 +881,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
       const f = hz / 2
       const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = f
       const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = f * (1.005 + i * 0.0012)
+      attachDrift(ctx, [o1.detune, o2.detune], t, t + dur + 0.15, 3)
       const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 2
       lp.frequency.setValueAtTime(260, t)
       lp.frequency.linearRampToValueAtTime(2000, t + dur * 0.5)
@@ -867,8 +893,10 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
       const pan = ((i / Math.max(1, extended.length - 1)) - 0.5) * 1.7
       const sp = ctx.createStereoPanner(); sp.pan.value = pan
       o1.connect(lp); o2.connect(lp); lp.connect(amp); amp.connect(sp); sp.connect(bus)
+      // Pre-delayed reverb send — 50ms gap lets the dry pad speak before the wash arrives.
       const rSend = ctx.createGain(); rSend.gain.value = 0.85
-      amp.connect(rSend); rSend.connect(reverbInRef.current!)
+      const rPre = ctx.createDelay(0.2); rPre.delayTime.value = 0.05
+      amp.connect(rSend); rSend.connect(rPre); rPre.connect(reverbInRef.current!)
       o1.start(t); o2.start(t)
       o1.stop(t + dur + 0.1); o2.stop(t + dur + 0.1)
     })
@@ -879,6 +907,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
     const ctx = audioCtxRef.current!
     const o1 = ctx.createOscillator(); o1.type = 'sine'; o1.frequency.value = hz / 2
     const o2 = ctx.createOscillator(); o2.type = 'sine'; o2.frequency.value = hz / 2 * 1.003
+    attachDrift(ctx, [o1.detune, o2.detune], t, t + dur + 0.15, 1.8)
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
     amp.gain.linearRampToValueAtTime(vel * 0.16, t + dur * 0.25)
@@ -921,6 +950,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f
         return o
       })
+      attachDrift(ctx, oscs.map(o => o.detune), t, t + dur + 0.15, 3)
       const mix = ctx.createGain(); mix.gain.value = 0.5
       const bp1 = ctx.createBiquadFilter(); bp1.type = 'bandpass'; bp1.frequency.value = 720; bp1.Q.value = 7
       const bp2 = ctx.createBiquadFilter(); bp2.type = 'bandpass'; bp2.frequency.value = 1180; bp2.Q.value = 5
@@ -934,8 +964,10 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
       const pan = ((i / Math.max(1, chord.length - 1)) - 0.5) * 1.4
       const sp = ctx.createStereoPanner(); sp.pan.value = pan
       mix.connect(amp); amp.connect(sp); sp.connect(bus)
+      // Pre-delayed reverb send so the choir's dry "aaah" lands before the tail.
       const rSend = ctx.createGain(); rSend.gain.value = 0.9
-      amp.connect(rSend); rSend.connect(reverbInRef.current!)
+      const rPre = ctx.createDelay(0.2); rPre.delayTime.value = 0.045
+      amp.connect(rSend); rSend.connect(rPre); rPre.connect(reverbInRef.current!)
       oscs.forEach(o => { o.start(t); o.stop(t + dur + 0.1) })
     })
   }, [])

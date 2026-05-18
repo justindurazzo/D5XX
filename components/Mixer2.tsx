@@ -175,6 +175,8 @@ function attachDrift(ctx: AudioContext, targets: AudioParam[], t: number, stopAt
 // (Module-level so its inferred type is Float32Array<ArrayBuffer>, which is what
 // WaveShaperNode.curve expects — a ref-typed Float32Array widens to ArrayBufferLike.)
 const BASS_DRIVE_CURVE = makeTanhCurve(1.7)
+// Gentle saturation for the euphoric supersaw motif — warms the saw stack.
+const SUPERSAW_DRIVE = makeTanhCurve(1.6)
 
 type MixerProps = {
   /** When true, the mixer starts playing automatically (with a master gain fade-in). */
@@ -916,57 +918,63 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const rSend = ctx.createGain(); rSend.gain.value = 0.72; amp.connect(rSend); rSend.connect(reverbInRef.current!)
   }, [])
 
-  // LEAD synth — additive (integer harmonics) for warmth, slow 4.5Hz vibrato for "singing"
-  // character. Slower attack and longer sustain make it feel sung rather than played.
-  // Monophonic, so it glides (portamento) from the previous note's pitch into each note.
+  // EUPHORIC MOTIF — a detuned 7-saw supersaw stack (the Four Tet / Bicep world).
+  // Wide unison detune with per-voice stereo spread for cinematic width, a soft filter
+  // bloom on the attack, gentle saturation, slow pitch drift, and a big pre-delayed
+  // reverb send. Monophonic, so it glides (portamento) from the previous note.
   const lead = useCallback((t: number, hz: number, vel: number, pan: number) => {
     const ctx = audioCtxRef.current!
     const bus = melodyBusRef.current!
-    const partials: Array<{ mult: number; gain: number }> = [
-      { mult: 1, gain: 1.0 },
-      { mult: 2, gain: 0.32 },
-      { mult: 3, gain: 0.12 },
-    ]
-    const mix = ctx.createGain(); mix.gain.value = 0.22
 
-    // Shared vibrato LFO modulates each partial's frequency.
-    const vib = ctx.createOscillator(); vib.type = 'sine'; vib.frequency.value = 4.5
-    const vibDepth = ctx.createGain(); vibDepth.gain.value = hz * 0.0045 // ±0.45%
-    vib.connect(vibDepth)
-    vib.start(t + 0.08) // delayed onset — natural "settle into vibrato"
-    vib.stop(t + 0.65)
-
+    // 7 unison voices: wide detune in cents, spread across the stereo field.
+    const spread = [-24, -15, -8, 0, 8, 15, 24]
+    const mix = ctx.createGain(); mix.gain.value = 0.12
     const prevHz = lastLeadHzRef.current
     const driftTargets: AudioParam[] = []
-    partials.forEach(({ mult, gain }) => {
+    spread.forEach((cents, i) => {
       const o = ctx.createOscillator()
-      o.type = 'sine'
-      // Glide from the previous note over 80ms — the Radiohead lead "scoop".
+      o.type = 'sawtooth'
+      o.detune.value = cents + (Math.random() - 0.5) * 6 // jitter — no two notes identical
+      // Glide from the previous note over 90ms.
       if (prevHz) {
-        o.frequency.setValueAtTime(prevHz * mult, t)
-        o.frequency.exponentialRampToValueAtTime(hz * mult, t + 0.08)
+        o.frequency.setValueAtTime(prevHz, t)
+        o.frequency.exponentialRampToValueAtTime(hz, t + 0.09)
       } else {
-        o.frequency.value = hz * mult
+        o.frequency.value = hz
       }
-      vibDepth.connect(o.frequency)
       driftTargets.push(o.detune)
-      const pg = ctx.createGain(); pg.gain.value = gain
-      o.connect(pg); pg.connect(mix)
-      o.start(t); o.stop(t + 0.6)
+      const vp = ctx.createStereoPanner()
+      vp.pan.value = (i / (spread.length - 1)) * 2 - 1 // -1 .. +1
+      o.connect(vp); vp.connect(mix)
+      o.start(t); o.stop(t + 0.85)
     })
     lastLeadHzRef.current = hz
-    attachDrift(ctx, driftTargets, t, t + 0.62, 2)
+    attachDrift(ctx, driftTargets, t, t + 0.87, 3)
+
+    // Lowpass with a soft filter bloom — opens over 260ms on attack, then settles.
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 3
+    lp.frequency.setValueAtTime(520, t)
+    lp.frequency.linearRampToValueAtTime(3600, t + 0.26)
+    lp.frequency.exponentialRampToValueAtTime(1400, t + 0.7)
+
+    // Gentle saturation to warm the saw stack.
+    const drive = ctx.createWaveShaper()
+    drive.curve = SUPERSAW_DRIVE
+    drive.oversample = '2x'
 
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
-    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.22), t + 0.02) // 20ms attack
-    amp.gain.setValueAtTime(Math.max(0.001, vel * 0.22), t + 0.28)
-    amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.55)
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.24), t + 0.055) // 55ms soft attack
+    amp.gain.setValueAtTime(Math.max(0.001, vel * 0.24), t + 0.3)
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.78) // long-ish release — gentle overlap
 
-    const sp = ctx.createStereoPanner(); sp.pan.value = pan
-    mix.connect(amp); amp.connect(sp); sp.connect(bus)
-    const dSend = ctx.createGain(); dSend.gain.value = 0.4;  amp.connect(dSend); dSend.connect(delayInRef.current!)
-    const rSend = ctx.createGain(); rSend.gain.value = 0.62; amp.connect(rSend); rSend.connect(reverbInRef.current!)
+    const sp = ctx.createStereoPanner(); sp.pan.value = pan * 0.4
+    mix.connect(lp); lp.connect(drive); drive.connect(amp); amp.connect(sp); sp.connect(bus)
+    const dSend = ctx.createGain(); dSend.gain.value = 0.4; amp.connect(dSend); dSend.connect(delayInRef.current!)
+    // Big pre-delayed reverb send — the cloudy, washed-out bloom.
+    const rSend = ctx.createGain(); rSend.gain.value = 0.85
+    const rPre = ctx.createDelay(0.2); rPre.delayTime.value = 0.05
+    amp.connect(rSend); rSend.connect(rPre); rPre.connect(reverbInRef.current!)
   }, [])
 
   // Bigger pad: wider voicings, longer attack, heavier reverb send. The atmospheric floor.

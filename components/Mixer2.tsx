@@ -174,7 +174,7 @@ function attachDrift(ctx: AudioContext, targets: AudioParam[], t: number, stopAt
 // Built once at module load. Reused for every bass note's per-voice waveshaper.
 // (Module-level so its inferred type is Float32Array<ArrayBuffer>, which is what
 // WaveShaperNode.curve expects — a ref-typed Float32Array widens to ArrayBufferLike.)
-const BASS_DRIVE_CURVE = makeTanhCurve(1.7)
+const BASS_DRIVE_CURVE = makeTanhCurve(1.2)
 // Gentle saturation for the euphoric supersaw motif — warms the saw stack.
 const SUPERSAW_DRIVE = makeTanhCurve(1.6)
 
@@ -499,10 +499,14 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     drumSat.oversample = '2x'
     const drums = ctx.createGain(); drums.gain.value = 1.0
     drums.connect(drumComp); drumComp.connect(drumSat); drumSat.connect(sceneWall)
+    // Whole-kit room send — a little reverb off the drum bus glues the beats into a
+    // space, so the kit reads as recorded-in-a-room rather than dry and synthetic.
+    const drumRoom = ctx.createGain(); drumRoom.gain.value = 0.14
+    drumSat.connect(drumRoom); drumRoom.connect(reverbIn)
     drumsBusRef.current = drums
 
     const bassSat = ctx.createWaveShaper()
-    bassSat.curve = makeTanhCurve(2.2)
+    bassSat.curve = makeTanhCurve(1.5) // gentle — round warmth, not grit
     bassSat.oversample = '2x'
     // Bass sidechain — gentler than the melody bus (only ducks to 0.75) so the bass keeps weight.
     const bassSidechain = ctx.createGain(); bassSidechain.gain.value = 1.0
@@ -571,14 +575,14 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5)
     o.connect(g); g.connect(drums)
 
-    // Softer click — was 0.7, now 0.38
+    // Soft click — kept low so the kick is a round thud, not a digital tick.
     const len = Math.floor(ctx.sampleRate * 0.013)
     const buf = ctx.createBuffer(1, len, ctx.sampleRate)
     const ch = buf.getChannelData(0)
     for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / len)
     const src = ctx.createBufferSource(); src.buffer = buf
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1300
-    const cg = ctx.createGain(); cg.gain.value = vel * 0.38
+    const cg = ctx.createGain(); cg.gain.value = vel * 0.22
     src.connect(hp); hp.connect(cg); cg.connect(drums)
     src.start(t)
 
@@ -696,8 +700,9 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     carrier.start(t); mod.start(t); carrier.stop(t + 0.1); mod.stop(t + 0.1)
   }, [])
 
-  // Softer hat: filtered noise (no FM) with a peaking shelf for definition. Less "machine clank",
-  // more "tape brush". Slightly slower attack reads as organic instead of digital.
+  // Brushed hat: filtered noise (no FM) with a gentle peaking shelf. Soft and airy
+  // rather than crisp/metallic, with a slower attack and a touch more reverb so it
+  // sits in the room instead of clicking on top of the mix.
   const hat = useCallback((t: number, vel: number, openish: boolean, step: number) => {
     const ctx = audioCtxRef.current!
     const dur = openish ? 0.2 : 0.045
@@ -707,59 +712,59 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1
     const src = ctx.createBufferSource(); src.buffer = buf
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = openish ? 6800 : 7800
-    // Peaking shelf adds "air" at the top without being harsh
+    // Gentle peaking shelf — a touch of air without the metallic sizzle.
     const peak = ctx.createBiquadFilter(); peak.type = 'peaking'
-    peak.frequency.value = 10500; peak.gain.value = 3.5; peak.Q.value = 0.9
+    peak.frequency.value = 10500; peak.gain.value = 1.6; peak.Q.value = 0.9
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
-    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.3), t + 0.0025) // 2.5ms attack
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.26), t + 0.004) // 4ms attack — brushed
     amp.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     const panV = ((step % 4) - 1.5) / 1.5 * 0.45
     const sp = ctx.createStereoPanner(); sp.pan.value = panV
     src.connect(hp); hp.connect(peak); peak.connect(amp); amp.connect(sp); sp.connect(drumsBusRef.current!)
     const dSend = ctx.createGain(); dSend.gain.value = openish ? 0.32 : 0.18; amp.connect(dSend); dSend.connect(delayInRef.current!)
-    const rSend = ctx.createGain(); rSend.gain.value = openish ? 0.28 : 0.12; amp.connect(rSend); rSend.connect(reverbInRef.current!)
+    const rSend = ctx.createGain(); rSend.gain.value = openish ? 0.36 : 0.2; amp.connect(rSend); rSend.connect(reverbInRef.current!)
     src.start(t)
   }, [])
 
+  // Deep, round, sub-focused bass. No saws — they were the buzzy, mid-forward "obnoxious"
+  // edge. A dominant sine sub you feel more than hear, plus a quiet triangle through a
+  // dark filter for just enough articulation. Floating Points / Four Tet low end.
   const bass = useCallback((t: number, hz: number, vel: number, cutoff: number) => {
     const ctx = audioCtxRef.current!
     const bus = bassBusRef.current!
 
+    // Sine sub — the dominant layer. Goes clean to the bus (a sine has nothing to filter).
     const sub = ctx.createOscillator(); sub.type = 'sine'; sub.frequency.value = hz / 2
     const subAmp = ctx.createGain()
     subAmp.gain.setValueAtTime(0.0001, t)
-    subAmp.gain.exponentialRampToValueAtTime(vel * 0.6, t + 0.005)
-    subAmp.gain.exponentialRampToValueAtTime(0.0001, t + 0.52)
+    subAmp.gain.exponentialRampToValueAtTime(vel * 0.9, t + 0.018) // softer attack — no pluck
+    subAmp.gain.exponentialRampToValueAtTime(0.0001, t + 0.6)
     sub.connect(subAmp); subAmp.connect(bus)
 
-    // Two saws + a triangle for body. Triangle (not square) keeps the harmonics warm
-    // rather than buzzy; a slow LFO drifts both saws a couple cents for analog instability.
-    const o1 = ctx.createOscillator(); o1.type = 'sawtooth'; o1.frequency.value = hz
-    const o2 = ctx.createOscillator(); o2.type = 'sawtooth'; o2.frequency.value = hz * (1.005 + Math.random() * 0.004)
+    // Triangle at pitch — gentle odd harmonics so the note articulates on small speakers,
+    // without the saw buzz. Through a dark, low-resonance filter.
     const tri = ctx.createOscillator(); tri.type = 'triangle'; tri.frequency.value = hz
-    const trig = ctx.createGain(); trig.gain.value = 0.26
-    tri.connect(trig)
-    attachDrift(ctx, [o1.detune, o2.detune], t, t + 0.56, 2.5)
+    attachDrift(ctx, [sub.detune, tri.detune], t, t + 0.62, 2)
 
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 5
-    lp.frequency.setValueAtTime(cutoff * 3, t)
-    lp.frequency.exponentialRampToValueAtTime(cutoff, t + 0.12)
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.4
+    lp.frequency.setValueAtTime(cutoff * 1.6, t)
+    lp.frequency.exponentialRampToValueAtTime(cutoff * 0.85, t + 0.14)
 
+    // Very gentle saturation — warmth, not grit.
     const drive = ctx.createWaveShaper()
     drive.curve = BASS_DRIVE_CURVE
     drive.oversample = '2x'
 
-    const amp = ctx.createGain()
-    amp.gain.setValueAtTime(0.0001, t)
-    amp.gain.exponentialRampToValueAtTime(vel * 0.42, t + 0.012)
-    amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.52)
+    const triAmp = ctx.createGain()
+    triAmp.gain.setValueAtTime(0.0001, t)
+    triAmp.gain.exponentialRampToValueAtTime(vel * 0.3, t + 0.022)
+    triAmp.gain.exponentialRampToValueAtTime(0.0001, t + 0.5)
 
-    o1.connect(lp); o2.connect(lp); trig.connect(lp)
-    lp.connect(drive); drive.connect(amp); amp.connect(bus)
+    tri.connect(lp); lp.connect(drive); drive.connect(triAmp); triAmp.connect(bus)
 
-    sub.start(t); o1.start(t); o2.start(t); tri.start(t)
-    sub.stop(t + 0.55); o1.stop(t + 0.56); o2.stop(t + 0.56); tri.stop(t + 0.56)
+    sub.start(t); tri.start(t)
+    sub.stop(t + 0.64); tri.stop(t + 0.54)
   }, [])
 
   // Rhodes/electric piano: additive integer harmonics (not FM). Slight per-partial detuning gives

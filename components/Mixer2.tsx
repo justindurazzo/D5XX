@@ -471,7 +471,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const convPlate   = ctx.createConvolver(); convPlate.buffer   = makeIR(ctx, 'plate')
     const convChamber = ctx.createConvolver(); convChamber.buffer = makeIR(ctx, 'chamber')
     const reverbIn = ctx.createGain(); reverbIn.gain.value = 1.0
-    const reverbWet = ctx.createGain(); reverbWet.gain.value = 0.88
+    const reverbWet = ctx.createGain(); reverbWet.gain.value = 0.7
     const springGain  = ctx.createGain(); springGain.gain.value  = gL0
     const plateGain   = ctx.createGain(); plateGain.gain.value   = gW0
     const chamberGain = ctx.createGain(); chamberGain.gain.value = gWorld0
@@ -569,14 +569,14 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5)
     o.connect(g); g.connect(drums)
 
-    // Soft click — kept low so the kick is a round thud, not a techno tick (Four Tet feel).
+    // Softer click — was 0.7, now 0.38
     const len = Math.floor(ctx.sampleRate * 0.013)
     const buf = ctx.createBuffer(1, len, ctx.sampleRate)
     const ch = buf.getChannelData(0)
     for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / len)
     const src = ctx.createBufferSource(); src.buffer = buf
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1300
-    const cg = ctx.createGain(); cg.gain.value = vel * 0.22
+    const cg = ctx.createGain(); cg.gain.value = vel * 0.38
     src.connect(hp); hp.connect(cg); cg.connect(drums)
     src.start(t)
 
@@ -694,9 +694,8 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     carrier.start(t); mod.start(t); carrier.stop(t + 0.1); mod.stop(t + 0.1)
   }, [])
 
-  // Brushed hat: filtered noise (no FM) with a gentle peaking shelf. Soft and airy rather
-  // than crisp — the rolling "tape brush" hat of the Four Tet palette. A little extra
-  // reverb send sits it in the room.
+  // Softer hat: filtered noise (no FM) with a peaking shelf for definition. Less "machine clank",
+  // more "tape brush". Slightly slower attack reads as organic instead of digital.
   const hat = useCallback((t: number, vel: number, openish: boolean, step: number) => {
     const ctx = audioCtxRef.current!
     const dur = openish ? 0.2 : 0.045
@@ -706,18 +705,18 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1
     const src = ctx.createBufferSource(); src.buffer = buf
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = openish ? 6800 : 7800
-    // Gentle peaking shelf — a touch of air without the metallic sizzle.
+    // Peaking shelf adds "air" at the top without being harsh
     const peak = ctx.createBiquadFilter(); peak.type = 'peaking'
-    peak.frequency.value = 10500; peak.gain.value = 1.6; peak.Q.value = 0.9
+    peak.frequency.value = 10500; peak.gain.value = 3.5; peak.Q.value = 0.9
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
-    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.26), t + 0.004) // 4ms attack — brushed
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.3), t + 0.0025) // 2.5ms attack
     amp.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     const panV = ((step % 4) - 1.5) / 1.5 * 0.45
     const sp = ctx.createStereoPanner(); sp.pan.value = panV
     src.connect(hp); hp.connect(peak); peak.connect(amp); amp.connect(sp); sp.connect(drumsBusRef.current!)
     const dSend = ctx.createGain(); dSend.gain.value = openish ? 0.32 : 0.18; amp.connect(dSend); dSend.connect(delayInRef.current!)
-    const rSend = ctx.createGain(); rSend.gain.value = openish ? 0.36 : 0.2; amp.connect(rSend); rSend.connect(reverbInRef.current!)
+    const rSend = ctx.createGain(); rSend.gain.value = openish ? 0.28 : 0.12; amp.connect(rSend); rSend.connect(reverbInRef.current!)
     src.start(t)
   }, [])
 
@@ -882,40 +881,39 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
 
   // ═══════════ THE WORLD voices (transcendent / Floating Points) ═══════════
 
-  // Bell / kalimba — additive with mildly inharmonic partials (the bell shimmer) and long
-  // ringing decays. Brighter and longer than a wooden mallet: the elevated, shimmering
-  // Four Tet melodic tone. Upper partials die first; the fundamental rings on.
+  // Wooden mallet: additive with integer harmonics, slight inharmonicity on the top partial,
+  // tiny pitch settle on attack (the "thud" of a mallet hitting wood). Each partial has its own
+  // decay so the upper harmonics die first — exactly how real instruments behave.
   const mallet = useCallback((t: number, hz: number, vel: number, pan: number) => {
     const ctx = audioCtxRef.current!
     const partials: Array<{ mult: number; gain: number; decay: number }> = [
-      { mult: 1,    gain: 1.0,  decay: 1.6  },
-      { mult: 2.01, gain: 0.50, decay: 1.1  }, // near-octave, slightly detuned = shimmer
-      { mult: 3.0,  gain: 0.30, decay: 0.7  },
-      { mult: 4.16, gain: 0.22, decay: 0.5  }, // inharmonic — bell character
-      { mult: 5.43, gain: 0.12, decay: 0.35 }, // bright top sparkle
+      { mult: 1,   gain: 1.0,  decay: 0.7  },
+      { mult: 2,   gain: 0.42, decay: 0.5  },
+      { mult: 3,   gain: 0.18, decay: 0.35 },
+      { mult: 4.1, gain: 0.08, decay: 0.22 }, // slight inharmonicity = woody character
     ]
-    const mix = ctx.createGain(); mix.gain.value = 0.24
+    const mix = ctx.createGain(); mix.gain.value = 0.28
     const driftTargets: AudioParam[] = []
     partials.forEach(({ mult, gain, decay }) => {
       const o = ctx.createOscillator()
       o.type = 'sine'
-      // Tiny pitch settle (0.3% drop over 30ms) — the strike "give"
+      // Tiny pitch settle (0.3% drop over 30ms) — the wood "give"
       o.frequency.setValueAtTime(hz * mult * 1.003, t)
       o.frequency.exponentialRampToValueAtTime(hz * mult, t + 0.03)
       driftTargets.push(o.detune)
       const pg = ctx.createGain()
       pg.gain.setValueAtTime(0.0001, t)
-      pg.gain.exponentialRampToValueAtTime(gain, t + 0.006) // 6ms attack — bright pluck
+      pg.gain.exponentialRampToValueAtTime(gain, t + 0.008) // 8ms attack — softer than FM
       pg.gain.exponentialRampToValueAtTime(0.0001, t + decay)
       o.connect(pg); pg.connect(mix)
       o.start(t); o.stop(t + decay + 0.05)
     })
-    attachDrift(ctx, driftTargets, t, t + 1.7, 2)
+    attachDrift(ctx, driftTargets, t, t + 0.8, 2)
     const amp = ctx.createGain(); amp.gain.value = vel
     const sp = ctx.createStereoPanner(); sp.pan.value = pan
     mix.connect(amp); amp.connect(sp); sp.connect(atmosBusRef.current!)
-    const dSend = ctx.createGain(); dSend.gain.value = 0.5;  amp.connect(dSend); dSend.connect(delayInRef.current!)
-    const rSend = ctx.createGain(); rSend.gain.value = 0.9;  amp.connect(rSend); rSend.connect(reverbInRef.current!)
+    const dSend = ctx.createGain(); dSend.gain.value = 0.45; amp.connect(dSend); dSend.connect(delayInRef.current!)
+    const rSend = ctx.createGain(); rSend.gain.value = 0.72; amp.connect(rSend); rSend.connect(reverbInRef.current!)
   }, [])
 
   // LEAD synth — additive (integer harmonics) for warmth, slow 4.5Hz vibrato for "singing"
@@ -999,7 +997,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
       const sp = ctx.createStereoPanner(); sp.pan.value = pan
       o1.connect(lp); o2.connect(lp); o3g.connect(lp); lp.connect(amp); amp.connect(sp); sp.connect(bus)
       // Pre-delayed reverb send — 50ms gap lets the dry pad speak before the wash arrives.
-      const rSend = ctx.createGain(); rSend.gain.value = 1.0
+      const rSend = ctx.createGain(); rSend.gain.value = 0.85
       const rPre = ctx.createDelay(0.2); rPre.delayTime.value = 0.05
       amp.connect(rSend); rSend.connect(rPre); rPre.connect(reverbInRef.current!)
       o1.start(t); o2.start(t); o3.start(t)
@@ -1070,7 +1068,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
       const sp = ctx.createStereoPanner(); sp.pan.value = pan
       mix.connect(amp); amp.connect(sp); sp.connect(bus)
       // Pre-delayed reverb send so the choir's dry "aaah" lands before the tail.
-      const rSend = ctx.createGain(); rSend.gain.value = 1.0
+      const rSend = ctx.createGain(); rSend.gain.value = 0.9
       const rPre = ctx.createDelay(0.2); rPre.delayTime.value = 0.045
       amp.connect(rSend); rSend.connect(rPre); rPre.connect(reverbInRef.current!)
       oscs.forEach(o => { o.start(t); o.stop(t + dur + 0.1) })
@@ -1131,11 +1129,6 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const inDrop      = sect === 0
     const inBreakdown = sect === 1
     const inBuild     = sect === 2
-
-    // Baseline rolling swing — push the offbeat hits a little late so the groove rolls
-    // even at shuffle=0. The downbeat (sub 0) stays dead straight so the kick stays
-    // locked; hats / bass / lead on the offbeats lean back. The Four Tet roll.
-    time += sub === 2 ? 0.014 : sub === 1 ? 0.006 : sub === 3 ? 0.008 : 0
 
     const ctxNow = audioCtxRef.current!
     const delayMsFor = (t: number) => Math.max(0, (t - ctxNow.currentTime) * 1000)

@@ -1112,16 +1112,24 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
 
     // BASS — continues across all sections (the spine of the song)
     if (!m.BASS && (sub === 0 || sub === 2)) {
-      const pat = [0, 0, 0, 0, 0, 7, 5, 0]
+      // Hypnotic syncopated riff: insistent root, two rests for groove, and a b7
+      // leading tone that pulls back to the root each bar. null = rest (no note).
+      const pat: (number | null)[] = [0, 0, null, 0, 7, 0, null, 10]
       const idx = Math.floor(step / 2) % pat.length
-      let hz = chord.bassRoot * Math.pow(2, pat[idx] / 12)
-      if (s.bass > 0.55 && stepInBar === 14 && !inBuild) hz *= 2
-      // In build, lock to root for tension/repetition
-      if (inBuild) hz = chord.bassRoot
-      const vel = velJ((inBreakdown ? 0.45 : 0.6) + s.bass * 0.4)
-      const cutoff = 260 + s.bass * 2400
-      bass(time + jitter() * 0.5, hz, vel, cutoff)
-      flashLed('BASS', delayMsFor(time))
+      const off = pat[idx]
+      if (inBuild) {
+        // BUILD: drop the riff, lock to a steady root pulse for tension/repetition.
+        const vel = velJ(0.6 + s.bass * 0.4)
+        bass(time + jitter() * 0.5, chord.bassRoot, vel, 260 + s.bass * 2400)
+        flashLed('BASS', delayMsFor(time))
+      } else if (off !== null) {
+        let hz = chord.bassRoot * Math.pow(2, off / 12)
+        if (s.bass > 0.55 && stepInBar === 14) hz *= 2
+        const vel = velJ((inBreakdown ? 0.45 : 0.6) + s.bass * 0.4)
+        const cutoff = 260 + s.bass * 2400
+        bass(time + jitter() * 0.5, hz, vel, cutoff)
+        flashLed('BASS', delayMsFor(time))
+      }
     }
 
     // RHODES — DROP only (drops out in BUILD for anticipation; sustains in BREAKDOWN)
@@ -1280,8 +1288,10 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
   return (
     <section id="mixer" className="mixer">
       <style>{`
-        .mixer { background: #f5f3ee; color: #0a0a0a; padding: 3rem 2.5rem 3.5rem; border-top: 1px solid rgba(10,10,10,0.08); --accent: #00FF63; }
-        .mixer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 1.4rem; flex-wrap: wrap; }
+        /* Fill the frame below the 38px topbar and center the contents, so the whole
+           mixer — headline, panel, scene fader — fits without running below the fold. */
+        .mixer { background: #f5f3ee; color: #0a0a0a; padding: 1.4rem 2.5rem; border-top: 1px solid rgba(10,10,10,0.08); --accent: #00FF63; box-sizing: border-box; min-height: calc(100vh - 38px); display: flex; flex-direction: column; justify-content: center; }
+        .mixer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 0.85rem; flex-wrap: wrap; }
         .mixer-headline {
           font-family: 'Archivo Black', sans-serif; font-size: clamp(30px, 3.8vw, 52px);
           line-height: 0.95; letter-spacing: -0.015em; transform: scaleX(1.1); transform-origin: left center;
@@ -1296,7 +1306,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           display: grid;
           grid-template-columns: repeat(5, 1fr) 1px auto;
           gap: 0.35rem;
-          min-height: 200px;
+          min-height: 162px;
           flex: 1;
           align-items: stretch;
         }
@@ -1582,7 +1592,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
           justify-content: space-between;
           align-items: center;
           gap: 1rem;
-          margin-top: 1rem;
+          margin-top: 0.55rem;
         }
         .mixer-credit {
           margin: 0;
@@ -1603,7 +1613,7 @@ export default function Mixer({ autoplay = false, autoplayDelay = 400 }: MixerPr
         }
 
         @media (max-width: 900px) {
-          .mixer { padding: 2.5rem 1.1rem 3rem; }
+          .mixer { padding: 2.5rem 1.1rem 3rem; min-height: 0; display: block; }
           .mixer-panel {
             grid-template-columns: 1fr;
             padding: 1.2rem 1rem;

@@ -30,14 +30,15 @@ function getSection(arrBar: number): 0 | 1 | 2 {
   return 2
 }
 
-// 8 notes per bar, indexed into the current chord's melodyNotes (5 entries each).
-// Same shape mapped onto each chord gives variation while keeping the line coherent.
-const LEAD_PATTERNS = [
-  [3, 4, 3, 2, 3, 2, 4, 3], // bar 1 of progression
-  [2, 3, 2, 1, 2, 3, 2, 0], // bar 2
-  [3, 2, 3, 4, 3, 2, 1, 2], // bar 3
-  [3, 4, 3, 2, 1, 2, 3, 1], // bar 4 — leads back to bar 1
-] as const
+// 8 eighth-note slots per bar; null = rest. Sparse 4-note hook — the rhythm shape is
+// the same every bar (slots 0, 2, 5, 6) so it reads as a memorable hook, while the
+// pitches move. Values index the current chord's melodyNotes (5 entries each).
+const LEAD_PATTERNS: ReadonlyArray<ReadonlyArray<number | null>> = [
+  [3, null, 4, null, null, 3, 2, null], // bar 1 of progression
+  [2, null, 3, null, null, 2, 1, null], // bar 2
+  [3, null, 4, null, null, 4, 2, null], // bar 3
+  [3, null, 2, null, null, 1, 2, null], // bar 4 — leads back to bar 1
+]
 
 // Am → F → C → G (i-VI-III-VII in A natural minor — the "All My Friends" / "Dance Yrself Clean" vibe).
 const PROGRESSION = [
@@ -1268,11 +1269,13 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     if (!m.LEAD && leadFires) {
       const noteIdx = Math.floor(stepInBar / 2)
       const idx = LEAD_PATTERNS[barIdx][noteIdx]
-      const hz = chord.melodyNotes[idx]
-      const baseVel = inBuild ? 0.4 : 0.85
-      const pan = ((stepInBar / 16) - 0.5) * 0.5
-      lead(time + jitter(), hz, velJ(baseVel), pan)
-      flashLed('LEAD', delayMsFor(time))
+      if (idx !== null) {
+        const hz = chord.melodyNotes[idx]
+        const baseVel = inBuild ? 0.4 : 0.85
+        const pan = ((stepInBar / 16) - 0.5) * 0.5
+        lead(time + jitter(), hz, velJ(baseVel), pan)
+        flashLed('LEAD', delayMsFor(time))
+      }
     }
 
     // ───── SNARE ROLL (BUILD only) — accelerates across the 4 build bars ─────

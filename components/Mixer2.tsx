@@ -701,6 +701,31 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     carrier.start(t); mod.start(t); carrier.stop(t + 0.1); mod.stop(t + 0.1)
   }, [])
 
+  // Woodblock — a soft pitched "tock" for the polyrhythmic counter-percussion. A triangle
+  // blip with a fast pitch drop through a resonant bandpass; synthesizes cleanly, so it
+  // adds organic tension without the toy quality of a synthesized kick or snare. Routed
+  // to the drum bus, with a send to the atmos bus so it carries into the World scene.
+  const woodblock = useCallback((t: number, vel: number, pan: number) => {
+    const ctx = audioCtxRef.current!
+    const o = ctx.createOscillator(); o.type = 'triangle'
+    o.frequency.setValueAtTime(1150, t)
+    o.frequency.exponentialRampToValueAtTime(720, t + 0.022)
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'
+    bp.frequency.value = 900; bp.Q.value = 4.5
+    const amp = ctx.createGain()
+    amp.gain.setValueAtTime(0.0001, t)
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel), t + 0.003)
+    amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.1)
+    const sp = ctx.createStereoPanner(); sp.pan.value = pan
+    o.connect(bp); bp.connect(amp); amp.connect(sp)
+    sp.connect(drumsBusRef.current!)
+    const wSend = ctx.createGain(); wSend.gain.value = 0.6
+    sp.connect(wSend); wSend.connect(atmosBusRef.current!)
+    const rSend = ctx.createGain(); rSend.gain.value = 0.3
+    amp.connect(rSend); rSend.connect(reverbInRef.current!)
+    o.start(t); o.stop(t + 0.13)
+  }, [])
+
   // Brushed hat: filtered noise (no FM) with a gentle peaking shelf. Soft and airy
   // rather than crisp/metallic, with a slower attack and a touch more reverb so it
   // sits in the room instead of clicking on top of the mix.
@@ -1225,6 +1250,16 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
       const openish = inDrop && s.shuffle > 0.75 && sub === 2 && beatInBar === 3 && Math.random() < 0.45
       hat(time + swingMs + jitter(), vel, openish, step)
       flashLed('HAT', delayMsFor(time))
+    }
+
+    // WOODBLOCK — 3-against-4 counter-percussion. Hits every 3rd sixteenth so it phases
+    // against the 4/4 grid, adding rolling tension against the kick and hook. Quiet by
+    // default; leans a touch louder as the fader moves toward The World.
+    if (!m.HAT && !inBreakdown && step % 3 === 0) {
+      const worldLean = Math.max(0, (sc - 0.5) * 2) // 0 at Wall St, 1 at The World
+      const wbVel = velJ(0.26 + worldLean * 0.16)
+      const wbPan = ((step % 6) / 5 - 0.5) * 0.7
+      woodblock(time + jitter(), wbVel, wbPan)
     }
 
     // BASS — continues across all sections (the spine of the song)

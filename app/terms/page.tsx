@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { TERMS_VERSION } from '../rsvp-config'
 
 export const metadata = {
   title: 'Terms & Photo Release — D5XX',
@@ -83,6 +84,13 @@ export default function TermsPage() {
         <p>
           Questions about these terms or the photo release can be directed to the
           D5XX organizers at the email address on your RSVP confirmation.
+        </p>
+
+        <p style={{
+          fontSize: '0.7rem', letterSpacing: '0.16em', textTransform: 'uppercase',
+          color: 'rgba(245,243,238,0.4)', marginTop: '3rem',
+        }}>
+          Photo &amp; Video Release — version {TERMS_VERSION}
         </p>
 
         <Link href="/" className="back">← Back to D5XX</Link>

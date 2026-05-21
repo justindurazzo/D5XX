@@ -10,6 +10,8 @@
 
 import crypto from 'crypto'
 
+import { TERMS_VERSION } from '../../rsvp-config'
+
 const SHEETS_SCOPE = 'https://www.googleapis.com/auth/spreadsheets'
 const TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
@@ -82,7 +84,8 @@ export async function appendRsvpToSheet(row: RsvpRow): Promise<void> {
     const privateKey = String(creds.private_key).replace(/\\n/g, '\n')
     const token = await getAccessToken(creds.client_email, privateKey)
 
-    const range = 'A:E'
+    // Columns A–F: Timestamp · First · Last · Email · Photo & Video Release · Terms Version
+    const range = 'A:F'
     const url =
       `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}` +
       `/values/${encodeURIComponent(range)}:append` +
@@ -104,6 +107,7 @@ export async function appendRsvpToSheet(row: RsvpRow): Promise<void> {
             row.lastName,
             row.email,
             row.photoWaiver ? 'Accepted' : 'Declined',
+            TERMS_VERSION,
           ],
         ],
       }),

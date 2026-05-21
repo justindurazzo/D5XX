@@ -24,12 +24,15 @@ The location ladder on the homepage unlocks in stages, driven by the New York da
 Every RSVP is appended as a row to a Google Sheet (the team-readable database),
 in addition to the confirmation emails. Code: `app/api/rsvp/google-sheet.ts`.
 
-**Columns (A–E):** Timestamp (ET) · First Name · Last Name · Email · Photo & Video Release
+**Columns (A–F):** Timestamp (ET) · First Name · Last Name · Email · Photo & Video Release · Terms Version
+
+The "Terms Version" column records which release wording the guest accepted (see
+`app/rsvp-config.ts`), so consent stays traceable if the terms text changes.
 
 ### Setup (~5 minutes)
 
 1. **Create the sheet** — go to <https://sheets.new>, name it `D5XX — RSVPs`.
-   Add a header row: `Timestamp | First Name | Last Name | Email | Photo & Video Release`.
+   Add a header row: `Timestamp | First Name | Last Name | Email | Photo & Video Release | Terms Version`.
    Copy the sheet ID from the URL (`docs.google.com/spreadsheets/d/<ID>/edit`) → set `RSVP_SHEET_ID`.
 2. **Create a service account** — in Google Cloud Console, create a project, enable the
    **Google Sheets API**, then create a service account and download its JSON key.

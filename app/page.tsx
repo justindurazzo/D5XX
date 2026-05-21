@@ -482,7 +482,7 @@ export default function Home() {
           color: var(--black);
           padding: 5.5rem 2.5rem 6rem;
           display: grid;
-          grid-template-columns: 1fr 1fr;
+          grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
           gap: 3rem 4rem;
           position: relative;
           overflow: hidden;
@@ -493,24 +493,23 @@ export default function Home() {
         .rsvp-left { display: flex; align-items: center; }
         .rsvp-headline {
           font-family: 'Archivo Black', sans-serif;
-          font-size: clamp(72px, 13vw, 210px);
-          line-height: 0.82;
+          /* Sized so "SEE YOU" stays on one line — two-line lockup, per Figma. */
+          font-size: clamp(54px, 9.5vw, 172px);
+          line-height: 0.84;
           letter-spacing: -0.02em;
           color: var(--black);
-          transform: scaleX(1.08);
-          transform-origin: left center;
         }
 
         .rsvp-right { display: flex; flex-direction: column; justify-content: center; }
 
         /* The form is a dark card with a green outline, sitting on the light section. */
         .rsvp-form {
-          border: 1px solid var(--green);
+          border: 1.5px solid var(--green);
           background: var(--black);
         }
         .field-wrap {
-          padding: 0.85rem 1.15rem 0.95rem;
-          border-bottom: 1px solid var(--rule-dark);
+          padding: 1.15rem 1.3rem 1.25rem;
+          border-bottom: 1px solid var(--green);
           background: transparent;
           transition: background 0.3s;
           position: relative;
@@ -532,7 +531,7 @@ export default function Home() {
           text-transform: uppercase;
           color: var(--gray-dim);
           display: block;
-          margin-bottom: 0.3rem;
+          margin-bottom: 0.45rem;
         }
         .field-wrap input {
           width: 100%;
@@ -540,7 +539,7 @@ export default function Home() {
           border: none;
           outline: none;
           font-family: 'DM Mono', monospace;
-          font-size: 0.95rem;
+          font-size: 1.05rem;
           color: var(--white);
           padding: 0;
           cursor: none;
@@ -550,7 +549,7 @@ export default function Home() {
         .field-wrap input:disabled { opacity: 0.5; }
 
         .waiver-row {
-          padding: 1rem 1.15rem;
+          padding: 1.25rem 1.3rem 1.35rem;
           display: flex;
           gap: 0.9rem;
           align-items: flex-start;

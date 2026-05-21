@@ -70,17 +70,22 @@ async function getAccessToken(clientEmail: string, privateKey: string): Promise<
  * Never throws — a failed DB write must not break the RSVP (email is the backup).
  */
 export async function appendRsvpToSheet(row: RsvpRow): Promise<void> {
-  const sheetId = process.env.RSVP_SHEET_ID
+  const rawSheetId = process.env.RSVP_SHEET_ID
   const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY
 
-  if (!sheetId || !rawKey) {
+  if (!rawSheetId || !rawKey) {
     console.warn('[rsvp] Google Sheet not configured — skipping database write')
     return
   }
 
-  // Diagnostic — surfaces what RSVP_SHEET_ID actually holds so a misformatted
-  // value (full URL pasted, stray characters) is visible in the runtime logs.
-  console.warn(`[rsvp] sheetidlen=${sheetId.length} h=${JSON.stringify(sheetId.slice(0, 12))}`)
+  // Tolerate a full sheet URL — or an ID with a trailing "/edit?gid=..." suffix —
+  // being pasted into RSVP_SHEET_ID. Extract the bare spreadsheet ID either way.
+  const sheetId =
+    rawSheetId.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ??
+    rawSheetId.trim().split(/[/?#]/)[0]
+
+  // Diagnostic — confirms the resolved spreadsheet ID is a clean value.
+  console.warn(`[rsvp] sheetid resolved len=${sheetId.length}`)
 
   try {
     const creds = JSON.parse(rawKey) as { client_email: string; private_key: string }

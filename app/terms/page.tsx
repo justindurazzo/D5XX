@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'Terms & Photo Release — D5XX',
-  description: 'Photo & film release and event terms for D5XX, June 9 at The Box.',
+  description: 'Photo & video release and event terms for D5XX, June 9.',
 }
 
 export default function TermsPage() {
@@ -36,11 +36,11 @@ export default function TermsPage() {
         <p className="eyebrow">D5XX · Terms &amp; Photo Release</p>
         <h1>FINE<br/>PRINT.</h1>
 
-        <h2>Photo &amp; Film Release</h2>
+        <h2>Photo &amp; Video Release</h2>
         <p>
-          By RSVPing to D5XX (the "Event") on June 9 at The Box, 189 Chrystie Street,
-          New York, NY, you acknowledge and agree that the Event will be photographed
-          and filmed by Droga5 and/or its appointed agents.
+          By RSVPing to D5XX (the "Event") on June 9 in New York, NY, you acknowledge
+          and agree that the Event will be photographed and filmed by Droga5 and/or
+          its appointed agents.
         </p>
         <p>
           You grant Droga5, its parent companies, affiliates, and successors a perpetual,
@@ -67,9 +67,9 @@ export default function TermsPage() {
 
         <h2>Venue Rules</h2>
         <p>
-          The Box maintains its own house rules and dress code. All attendees agree to
-          comply with venue policy, including any restrictions on mobile phone use,
-          recording, and personal photography during performances.
+          The event venue maintains its own house rules and dress code. All attendees
+          agree to comply with venue policy, including any restrictions on mobile phone
+          use, recording, and personal photography during performances.
         </p>
 
         <h2>Health &amp; Safety</h2>

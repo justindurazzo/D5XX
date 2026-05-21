@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { appendRsvpToSheet } from './google-sheet'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,7 +8,7 @@ export async function POST(req: NextRequest) {
   const resend = new Resend(process.env.RESEND_API_KEY)
   try {
     const body = await req.json()
-    const { firstName, lastName, email, phone, photoWaiver } = body
+    const { firstName, lastName, email, photoWaiver } = body
 
     if (!firstName || !lastName || !email) {
       return NextResponse.json(
@@ -26,10 +27,14 @@ export async function POST(req: NextRequest) {
 
     if (!photoWaiver) {
       return NextResponse.json(
-        { error: 'Photo & film release must be accepted to RSVP.' },
+        { error: 'Photo & video release must be accepted to RSVP.' },
         { status: 400 }
       )
     }
+
+    // Log the RSVP to the Google Sheet database. This never throws — a failed
+    // DB write must not block the confirmation email.
+    await appendRsvpToSheet({ firstName, lastName, email, photoWaiver })
 
     const toEmail = process.env.RSVP_TO_EMAIL || 'rsvp@droga5.com'
     const fromEmail = process.env.RSVP_FROM_EMAIL || 'onboarding@resend.dev'
@@ -49,11 +54,7 @@ export async function POST(req: NextRequest) {
               <td style="padding: 12px 0;">${escapeHtml(email)}</td>
             </tr>
             <tr style="border-top: 1px solid rgba(245,243,238,0.14);">
-              <td style="padding: 12px 0; color: #888; text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px;">Phone</td>
-              <td style="padding: 12px 0;">${escapeHtml(phone || '—')}</td>
-            </tr>
-            <tr style="border-top: 1px solid rgba(245,243,238,0.14);">
-              <td style="padding: 12px 0; color: #888; text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px;">Photo Release</td>
+              <td style="padding: 12px 0; color: #888; text-transform: uppercase; letter-spacing: 0.18em; font-size: 11px;">Photo &amp; Video Release</td>
               <td style="padding: 12px 0; color: #00FF63;">${photoWaiver ? '✓ Accepted' : '✗ Declined'}</td>
             </tr>
             <tr style="border-top: 1px solid rgba(245,243,238,0.14); border-bottom: 1px solid rgba(245,243,238,0.14);">
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
     await resend.emails.send({
       from: fromEmail,
       to: email,
-      subject: `You're on the list — D5XX · June 9 · The Box`,
+      subject: `You're on the list — D5XX · June 9`,
       html: `
         <div style="font-family: 'DM Mono', monospace; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #f5f3ee; padding: 40px;">
           <div style="background: #00FF63; color: #0a0a0a; padding: 8px 12px; display: inline-block; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 32px;">D5XX · 20 Years of Droga5</div>
@@ -85,15 +86,15 @@ export async function POST(req: NextRequest) {
             </tr>
             <tr style="border-top: 1px solid rgba(245,243,238,0.14);">
               <td style="padding: 14px 0; color: #888; text-transform: uppercase; letter-spacing: 0.2em; font-size: 11px;">Location</td>
-              <td style="padding: 14px 0; font-size: 18px; font-weight: 700;">The Box<br/><span style="font-size: 13px; font-weight: 400; color: #888;">189 Chrystie St, New York, NY</span></td>
+              <td style="padding: 14px 0; font-size: 18px; font-weight: 700;">To be revealed<br/><span style="font-size: 13px; font-weight: 400; color: #888;">New York City — details to follow</span></td>
             </tr>
             <tr style="border-top: 1px solid rgba(245,243,238,0.14); border-bottom: 1px solid rgba(245,243,238,0.14);">
               <td style="padding: 14px 0; color: #888; text-transform: uppercase; letter-spacing: 0.2em; font-size: 11px;">Dress</td>
-              <td style="padding: 14px 0;">Smart / Sharp — Shiny, tactile, statement.</td>
+              <td style="padding: 14px 0;">Moodboard coming soon.</td>
             </tr>
           </table>
           <p style="margin-top: 32px; font-size: 12px; line-height: 1.7; color: #888;">
-            We'll follow up closer to the night with arrival details. Save the date.
+            We'll follow up by email and Partiful with location hints and arrival details. Save the date.
           </p>
           <p style="margin-top: 40px; font-size: 10px; color: #444; letter-spacing: 0.22em; text-transform: uppercase;">Droga5 · D5XX · 2006–2026</p>
         </div>

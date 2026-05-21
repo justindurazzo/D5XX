@@ -4,18 +4,62 @@ import { useEffect, useRef, useState } from 'react'
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
+// ────── Phased location reveal — driven by the comms calendar ──────
+// Phase 1 · 05/26 — RSVP site live + Earth / North America / United States / NYC
+// Phase 2 · 05/29 — Manhattan
+// Phase 3 · 06/02 — Lower East Side
+// Phase 4 · 06/08 — venue revealed
+// Steps above the current phase render redacted. Add ?phase=1..4 to the URL to
+// preview any stage on the feedback site.
+const LOCATION_STEPS: { name: string; phase: number; final?: boolean }[] = [
+  { name: 'EARTH', phase: 1 },
+  { name: 'NORTH AMERICA', phase: 1 },
+  { name: 'UNITED STATES', phase: 1 },
+  { name: 'NEW YORK CITY', phase: 1 },
+  { name: 'MANHATTAN', phase: 2 },
+  { name: 'LOWER EAST SIDE', phase: 3 },
+  { name: 'THE VENUE', phase: 4, final: true },
+]
+// The venue name is revealed on 06/08. Left blank intentionally — fill this in
+// on the reveal date (the final ladder step stays redacted until then).
+const VENUE_NAME = ''
+
+const redact = (s: string) => s.replace(/[A-Za-z0-9]/g, '█')
+
+function computePhase(): number {
+  const params = new URLSearchParams(window.location.search)
+  const override = params.get('phase')
+  if (override) {
+    const n = parseInt(override, 10)
+    if (n >= 1 && n <= 4) return n
+  }
+  // Current date in New York, as YYYY-MM-DD (lexically comparable).
+  const ny = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  let p = 1
+  if (ny >= '2026-05-29') p = 2
+  if (ny >= '2026-06-02') p = 3
+  if (ny >= '2026-06-08') p = 4
+  return p
+}
+
 export default function Home() {
   const cursorRef = useRef<HTMLDivElement>(null)
   const submitRef = useRef<HTMLButtonElement>(null)
   const [waiverChecked, setWaiverChecked] = useState(false)
   const [formState, setFormState] = useState<FormState>('idle')
   const [errorMsg, setErrorMsg] = useState('')
+  // Default to phase 1 (launch state) for SSR; the real phase is set on mount.
+  const [phase, setPhase] = useState(1)
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
   })
+
+  // ────── Resolve the live reveal phase (date- or query-driven) ──────
+  useEffect(() => {
+    setPhase(computePhase())
+  }, [])
 
   // ────── Cursor follow + idle pulse ──────
   useEffect(() => {
@@ -30,7 +74,7 @@ export default function Home() {
       idleTimer = setTimeout(() => cursor.classList.add('idle'), 600)
     }
     document.addEventListener('mousemove', move)
-    const hoverEls = document.querySelectorAll('a, button, input, .waiver-row, .dress-tile')
+    const hoverEls = document.querySelectorAll('a, button, input, .waiver-row')
     const expand = () => cursor.classList.add('expanded')
     const shrink = () => cursor.classList.remove('expanded')
     hoverEls.forEach(el => {
@@ -70,7 +114,7 @@ export default function Home() {
     )
     steps.forEach(el => observer.observe(el))
     return () => observer.disconnect()
-  }, [])
+  }, [phase])
 
   // ────── Magnetic submit button ──────
   useEffect(() => {
@@ -129,8 +173,8 @@ export default function Home() {
   }, [])
 
   // Cursor-parallax on hero. Maps mouse position over #hero to CSS vars --mx/--my on each
-  // .hero-stack span. Each row gets a different depth (3/6/9px max) so the type reads as
-  // layered, not a flat poster. Lerps via rAF for organic settle.
+  // .hero-stack span. Each row gets a different depth so the type reads as layered, not a
+  // flat poster. Lerps via rAF for organic settle.
   useEffect(() => {
     const hero = document.getElementById('hero')
     if (!hero) return
@@ -151,7 +195,7 @@ export default function Home() {
       currentX += (targetX - currentX) * 0.08
       currentY += (targetY - currentY) * 0.08
       spans.forEach((span, i) => {
-        const depth = (i + 1) * 6  // row 1: 6px max, row 2: 12px, row 3: 18px
+        const depth = (i + 1) * 8  // row 1: 8px max, row 2: 16px
         span.style.setProperty('--mx', `${currentX * depth}px`)
         span.style.setProperty('--my', `${currentY * depth}px`)
       })
@@ -169,8 +213,7 @@ export default function Home() {
   }, [])
 
   // Scroll-driven proximity scale on the location ladder. Each .loc-step element scales up
-  // and brightens as it passes through viewport center, scales back down past it. Page reads
-  // as a slow zoom inward toward "Hell · see you there" rather than a flat scroll-spy.
+  // and brightens as it passes through viewport center, scales back down past it.
   useEffect(() => {
     const steps = document.querySelectorAll<HTMLElement>('.loc-step')
     if (!steps.length) return
@@ -195,7 +238,7 @@ export default function Home() {
     }
     rafId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafId)
-  }, [])
+  }, [phase])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -205,7 +248,7 @@ export default function Home() {
     e.preventDefault()
     if (!waiverChecked) {
       setFormState('error')
-      setErrorMsg('Please accept the photo & film release to continue.')
+      setErrorMsg('Please accept the photo & video release to continue.')
       return
     }
     setFormState('submitting')
@@ -229,7 +272,7 @@ export default function Home() {
   const disabled = formState === 'submitting' || formState === 'success'
 
   const marqueeItems = [
-    'D5XX', '·', '20 YEARS OF DROGA5', '·', 'JUNE 9', '·', 'THE BOX · LES NYC', '·',
+    'D5XX', '·', '20 YEARS OF DROGA5', '·', 'JUNE 9', '·', 'NYC', '·',
     '7PM — LATE', '·', 'INVITATION ONLY', '·', 'CELEBRATE WITH A MUSIC NIGHT TO REMEMBER', '·',
   ]
 
@@ -248,7 +291,8 @@ export default function Home() {
           --gray-mid: #888;
           --gray-dim: rgba(245,243,238,0.4);
           --rule-dark: rgba(245,243,238,0.14);
-          --rule-light: rgba(10,10,10,0.14);
+          --rule-light: rgba(10,10,10,0.18);
+          --ink-dim: rgba(10,10,10,0.55);
         }
 
         html { scroll-behavior: smooth; }
@@ -349,7 +393,7 @@ export default function Home() {
         }
         .hero-stack {
           font-family: 'Archivo Black', 'Bowlby One', sans-serif;
-          font-size: clamp(96px, 22vw, 320px);
+          font-size: clamp(120px, 26vw, 380px);
           line-height: 0.82;
           letter-spacing: -0.025em;
           display: flex;
@@ -365,8 +409,7 @@ export default function Home() {
           animation: heroIn 1.05s cubic-bezier(0.18, 0.9, 0.2, 1) forwards;
         }
         .hero-stack span:nth-child(1) { animation-delay: 0.1s; }
-        .hero-stack span:nth-child(2) { animation-delay: 0.28s; }
-        .hero-stack span:nth-child(3) { animation-delay: 0.46s; }
+        .hero-stack span:nth-child(2) { animation-delay: 0.3s; }
         @keyframes heroIn {
           to {
             opacity: 1;
@@ -449,14 +492,14 @@ export default function Home() {
           to   { transform: translateX(-50%); }
         }
 
-        /* ───────── EVENT ───────── */
+        /* ───────── EVENT + RSVP (event details left · RSVP right) ───────── */
         .event {
           background: var(--gray-light);
           color: var(--black);
           padding: 5rem 2.5rem 6rem;
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 3rem;
+          gap: 3rem 4rem;
           position: relative;
           overflow: hidden;
         }
@@ -481,11 +524,13 @@ export default function Home() {
           from { transform: scaleX(1.1) translateX(0); }
           to   { transform: scaleX(1.1) translateX(-12%); }
         }
-        .event-left, .event-right { position: relative; z-index: 1; }
+        .event-left, .event-rsvp { position: relative; z-index: 1; }
+
+        /* ── left column: all event details ── */
         .event-headline {
           font-family: 'Archivo Black', sans-serif;
-          font-size: clamp(40px, 5vw, 72px);
-          line-height: 0.95;
+          font-size: clamp(48px, 6vw, 96px);
+          line-height: 0.92;
           letter-spacing: -0.015em;
           transform: scaleX(1.1);
           transform-origin: left center;
@@ -498,9 +543,16 @@ export default function Home() {
           color: var(--black);
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          max-width: 40ch;
+          max-width: 42ch;
         }
-        .event-right { display: flex; flex-direction: column; gap: 2rem; }
+        .event-details {
+          display: flex;
+          flex-direction: column;
+          gap: 1.75rem;
+          margin-top: 3rem;
+          padding-top: 2.5rem;
+          border-top: 1px solid var(--rule-light);
+        }
         .event-detail .label {
           font-family: 'DM Mono', monospace;
           font-size: 0.65rem;
@@ -519,6 +571,147 @@ export default function Home() {
           transform-origin: left center;
           color: var(--black);
         }
+        .event-detail .value.tbd { color: var(--ink-dim); }
+
+        /* ── right column: RSVP ── */
+        .event-rsvp { display: flex; flex-direction: column; }
+        .rsvp-head {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(40px, 5vw, 80px);
+          line-height: 0.9;
+          letter-spacing: -0.02em;
+          color: var(--black);
+          transform: scaleX(1.1);
+          transform-origin: left center;
+          margin-bottom: 2rem;
+        }
+        .field-wrap {
+          border: 1px solid var(--rule-light);
+          padding: 0.9rem 1.1rem 1rem;
+          background: transparent;
+          margin-bottom: -1px;
+          transition: border-color 0.3s, background 0.3s;
+          position: relative;
+        }
+        .field-wrap::after {
+          content: '';
+          position: absolute;
+          left: 0; bottom: -1px;
+          width: 0; height: 2px;
+          background: var(--green-deep);
+          transition: width 0.45s cubic-bezier(0.16,1,0.3,1);
+        }
+        .field-wrap:focus-within {
+          border-color: var(--green-deep);
+          background: rgba(0,255,99,0.07);
+        }
+        .field-wrap:focus-within::after { width: 100%; }
+        .field-label {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.55rem;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: var(--black);
+          opacity: 0.55;
+          display: block;
+          margin-bottom: 0.35rem;
+        }
+        .field-wrap input {
+          width: 100%;
+          background: transparent;
+          border: none;
+          outline: none;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.95rem;
+          color: var(--black);
+          padding: 0;
+          cursor: none;
+          caret-color: var(--green-deep);
+        }
+        .field-wrap input::placeholder { color: rgba(10,10,10,0.3); }
+        .field-wrap input:disabled { opacity: 0.5; }
+
+        .waiver-row {
+          border: 1px solid var(--rule-light);
+          padding: 1rem 1.1rem;
+          display: flex;
+          gap: 1rem;
+          align-items: flex-start;
+          cursor: pointer;
+          margin-top: 0.4rem;
+          transition: border-color 0.3s, background 0.3s;
+        }
+        .waiver-row:hover { border-color: var(--green-deep); background: rgba(0,255,99,0.05); }
+        .waiver-checkbox {
+          width: 14px; height: 14px;
+          border: 1px solid var(--green-deep);
+          background: transparent;
+          flex-shrink: 0;
+          margin-top: 4px;
+          transition: background 0.18s, transform 0.18s;
+          position: relative;
+        }
+        .waiver-checkbox.checked { background: var(--green-deep); transform: scale(1.05); }
+        .waiver-checkbox.checked::after {
+          content: '';
+          position: absolute;
+          inset: 2px;
+          background: var(--green-deep);
+          animation: pop 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        @keyframes pop {
+          0%   { transform: scale(0); }
+          60%  { transform: scale(1.2); }
+          100% { transform: scale(1); }
+        }
+        .waiver-text {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.62rem;
+          line-height: 1.65;
+          letter-spacing: 0.04em;
+          color: var(--ink-dim);
+          text-transform: uppercase;
+        }
+        .waiver-text strong { color: var(--green-deep); font-weight: 500; }
+        .waiver-text a {
+          color: var(--black);
+          text-decoration: underline;
+          text-underline-offset: 3px;
+        }
+
+        .rsvp-submit {
+          margin-top: 0.4rem;
+          background: var(--green);
+          color: var(--black);
+          font-family: 'DM Mono', monospace;
+          font-size: 0.7rem;
+          letter-spacing: 0.28em;
+          text-transform: uppercase;
+          padding: 1.1rem 1.2rem;
+          border: 1px solid var(--green-deep);
+          cursor: none;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          transition: background 0.25s, color 0.25s, transform 0.18s ease-out;
+          will-change: transform;
+        }
+        .rsvp-submit:hover:not(:disabled) { background: var(--black); color: var(--green); }
+        .rsvp-submit:disabled { opacity: 0.55; cursor: not-allowed; }
+        .rsvp-submit .arrow { font-size: 1.1rem; transition: transform 0.25s; }
+        .rsvp-submit:hover:not(:disabled) .arrow { transform: translateX(6px); }
+
+        .form-msg {
+          padding: 1rem 1.1rem;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.68rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          margin-top: 0.4rem;
+          animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1);
+        }
+        .form-msg.success { border: 1px solid var(--green-deep); color: var(--green-deep); }
+        .form-msg.error { border: 1px solid #d63b3b; color: #d63b3b; }
 
         /* ───────── LOCATION LADDER ───────── */
         .location {
@@ -529,13 +722,21 @@ export default function Home() {
         }
         .location-label {
           color: var(--green);
-          margin-bottom: 2.5rem;
+          margin-bottom: 0.9rem;
           display: flex;
           align-items: center;
           gap: 1rem;
         }
         .location-label::before {
           content: ''; width: 32px; height: 1px; background: var(--green);
+        }
+        .location-note {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: var(--gray-dim);
+          margin-bottom: 2.5rem;
         }
         .location-ladder {
           display: flex;
@@ -570,7 +771,6 @@ export default function Home() {
         .loc-step:nth-child(4) { font-size: clamp(40px, 5vw, 72px); }
         .loc-step:nth-child(5) { font-size: clamp(48px, 5.8vw, 84px); }
         .loc-step:nth-child(6) { font-size: clamp(54px, 6.6vw, 96px); }
-        .loc-step:nth-child(7) { font-size: clamp(64px, 7.6vw, 112px); color: var(--white); }
         .loc-step.final {
           font-size: clamp(56px, 7vw, 110px);
           color: var(--green);
@@ -578,161 +778,13 @@ export default function Home() {
           line-height: 1;
         }
         .loc-step.final.lit { letter-spacing: 0em; }
-        /* Phase 1.5 hook: tie .lit to date-based active step instead of scroll position. */
+        /* Redacted steps — locked until their reveal phase. */
+        .loc-step.locked { color: rgba(245,243,238,0.16); }
+        .loc-step.locked.lit { color: rgba(245,243,238,0.16); }
+        .loc-step.locked.lit::before { width: 0; }
+        .loc-step.final.locked { color: rgba(0,255,99,0.22); }
 
-        /* ───────── RSVP ───────── */
-        .rsvp {
-          background: var(--black);
-          color: var(--white);
-          padding: 5rem 2.5rem 7rem;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 3rem;
-          border-top: 1px solid var(--rule-dark);
-        }
-        .rsvp-left { display: flex; align-items: flex-start; }
-        .rsvp-headline {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: clamp(80px, 14vw, 220px);
-          line-height: 0.85;
-          letter-spacing: -0.02em;
-          color: var(--white);
-          transform: scaleX(1.15);
-          transform-origin: left center;
-        }
-        .rsvp-right {
-          display: flex;
-          flex-direction: column;
-          gap: 0;
-        }
-        .field-wrap {
-          border: 1px solid var(--green-soft);
-          padding: 0.9rem 1.1rem 1rem;
-          background: transparent;
-          margin-bottom: -1px;
-          transition: border-color 0.3s, background 0.3s;
-          position: relative;
-        }
-        .field-wrap::after {
-          content: '';
-          position: absolute;
-          left: 0; bottom: -1px;
-          width: 0; height: 2px;
-          background: var(--green);
-          transition: width 0.45s cubic-bezier(0.16,1,0.3,1);
-        }
-        .field-wrap:focus-within {
-          border-color: var(--green);
-          background: rgba(0,255,99,0.04);
-        }
-        .field-wrap:focus-within::after { width: 100%; }
-        .field-label {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.55rem;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          color: var(--green-deep);
-          display: block;
-          margin-bottom: 0.35rem;
-        }
-        .field-wrap input {
-          width: 100%;
-          background: transparent;
-          border: none;
-          outline: none;
-          font-family: 'DM Mono', monospace;
-          font-size: 0.95rem;
-          color: var(--white);
-          padding: 0;
-          cursor: none;
-          caret-color: var(--green);
-        }
-        .field-wrap input::placeholder { color: rgba(245,243,238,0.25); }
-        .field-wrap input:disabled { opacity: 0.5; }
-
-        .waiver-row {
-          border: 1px solid var(--green-soft);
-          padding: 1rem 1.1rem;
-          display: flex;
-          gap: 1rem;
-          align-items: flex-start;
-          cursor: pointer;
-          margin-top: 0.4rem;
-          transition: border-color 0.3s, background 0.3s;
-        }
-        .waiver-row:hover { border-color: var(--green); background: rgba(0,255,99,0.03); }
-        .waiver-checkbox {
-          width: 14px; height: 14px;
-          border: 1px solid var(--green);
-          background: transparent;
-          flex-shrink: 0;
-          margin-top: 4px;
-          transition: background 0.18s, transform 0.18s;
-          position: relative;
-        }
-        .waiver-checkbox.checked { background: var(--green); transform: scale(1.05); }
-        .waiver-checkbox.checked::after {
-          content: '';
-          position: absolute;
-          inset: 2px;
-          background: var(--green);
-          animation: pop 0.4s cubic-bezier(0.16,1,0.3,1);
-        }
-        @keyframes pop {
-          0%   { transform: scale(0); }
-          60%  { transform: scale(1.2); }
-          100% { transform: scale(1); }
-        }
-        .waiver-text {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.62rem;
-          line-height: 1.65;
-          letter-spacing: 0.04em;
-          color: var(--gray-dim);
-          text-transform: uppercase;
-        }
-        .waiver-text strong { color: var(--green); font-weight: 500; }
-        .waiver-text a {
-          color: var(--white);
-          text-decoration: underline;
-          text-underline-offset: 3px;
-        }
-
-        .rsvp-submit {
-          margin-top: 0.4rem;
-          background: var(--green);
-          color: var(--black);
-          font-family: 'DM Mono', monospace;
-          font-size: 0.7rem;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          padding: 1.1rem 1.2rem;
-          border: 1px solid var(--green);
-          cursor: none;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          transition: background 0.25s, color 0.25s, transform 0.18s ease-out;
-          will-change: transform;
-        }
-        .rsvp-submit:hover:not(:disabled) { background: var(--black); color: var(--green); }
-        .rsvp-submit:disabled { opacity: 0.55; cursor: not-allowed; }
-        .rsvp-submit .arrow { font-size: 1.1rem; transition: transform 0.25s; }
-        .rsvp-submit:hover:not(:disabled) .arrow { transform: translateX(6px); }
-
-        .form-msg {
-          padding: 1rem 1.1rem;
-          font-family: 'DM Mono', monospace;
-          font-size: 0.68rem;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          margin-top: 0.4rem;
-          animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1);
-        }
-        .form-msg.success { border: 1px solid var(--green); color: var(--green); }
-        .form-msg.error { border: 1px solid #ff6b6b; color: #ff6b6b; }
-
-        /* ───────── DRESS INSPO ───────── */
+        /* ───────── DRESS INSPO (placeholder — moodboard pending) ───────── */
         .dress {
           background: var(--gray-light);
           color: var(--black);
@@ -763,58 +815,36 @@ export default function Home() {
           opacity: 0.6;
           max-width: 32ch;
         }
-        .dress-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 0.8rem;
+        .dress-placeholder {
+          border: 1px dashed rgba(10,10,10,0.28);
+          background: repeating-linear-gradient(
+            45deg,
+            transparent, transparent 14px,
+            rgba(10,10,10,0.035) 14px, rgba(10,10,10,0.035) 28px
+          );
+          min-height: 340px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 1.1rem;
+          text-align: center;
+          padding: 3rem 1.5rem;
         }
-        .dress-tile {
-          aspect-ratio: 3 / 4;
-          position: relative;
-          overflow: hidden;
-          background: #d6d3cd;
-          cursor: none;
+        .dress-placeholder-mark {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(28px, 4vw, 52px);
+          letter-spacing: 0.1em;
+          color: var(--ink-dim);
         }
-        .dress-tile img {
-          width: 100%; height: 100%;
-          object-fit: cover;
-          display: block;
-          filter: grayscale(0.35) contrast(1.02);
-          transform: scale(1.02);
-          transition: filter 0.6s cubic-bezier(0.16,1,0.3,1),
-                      transform 0.7s cubic-bezier(0.16,1,0.3,1);
-        }
-        .dress-tile::after {
-          /* corner mark */
-          content: '';
-          position: absolute;
-          top: 10px; right: 10px;
-          width: 8px; height: 8px;
-          background: var(--green);
-          opacity: 0;
-          transform: scale(0.4);
-          transition: opacity 0.35s, transform 0.35s cubic-bezier(0.16,1,0.3,1);
-        }
-        .dress-tile::before {
-          /* counter chip */
-          content: attr(data-n);
-          position: absolute;
-          bottom: 10px; left: 10px;
+        .dress-placeholder p {
           font-family: 'DM Mono', monospace;
-          font-size: 0.55rem;
-          letter-spacing: 0.24em;
-          color: var(--white);
-          background: rgba(10,10,10,0.55);
-          padding: 4px 8px;
-          backdrop-filter: blur(4px);
-          z-index: 2;
-          opacity: 0.85;
+          font-size: 0.7rem;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: var(--black);
+          opacity: 0.55;
         }
-        .dress-tile:hover img {
-          filter: grayscale(0) contrast(1.05);
-          transform: scale(1.06);
-        }
-        .dress-tile:hover::after { opacity: 1; transform: scale(1); }
 
         /* ───────── FOOTER ───────── */
         footer {
@@ -867,10 +897,11 @@ export default function Home() {
         @media (max-width: 900px) {
           .hero { grid-template-columns: 1fr; padding: 2rem 1.25rem 3rem; }
           .hero-right { padding-top: 1.5rem; }
-          .event { grid-template-columns: 1fr; padding: 3.5rem 1.25rem 4.5rem; }
-          .rsvp { grid-template-columns: 1fr; padding: 3.5rem 1.25rem 5rem; }
-          .rsvp-headline { font-size: clamp(64px, 18vw, 130px); }
-          .dress-grid { grid-template-columns: repeat(2, 1fr); }
+          .event {
+            grid-template-columns: 1fr;
+            gap: 3.5rem;
+            padding: 3.5rem 1.25rem 4.5rem;
+          }
           .dress { padding: 3.5rem 1.25rem 4.5rem; }
           .location { padding: 4rem 1.25rem 5rem; }
           .topbar { padding: 0.6rem 1.25rem; font-size: 0.6rem; }
@@ -879,7 +910,7 @@ export default function Home() {
         @media (max-width: 480px) {
           body { cursor: auto; }
           .cursor { display: none; }
-          input, button, a, .waiver-row, .dress-tile { cursor: auto !important; }
+          input, button, a, .waiver-row { cursor: auto !important; }
           .rsvp-submit { cursor: pointer !important; }
         }
         @media (prefers-reduced-motion: reduce) {
@@ -903,9 +934,8 @@ export default function Home() {
       {/* HERO */}
       <section id="hero" className="hero">
         <div className="hero-left">
-          <h1 className="hero-stack" aria-label="D5MNXX">
+          <h1 className="hero-stack" aria-label="D5XX">
             <span>D5</span>
-            <span>MN</span>
             <span>XX</span>
           </h1>
         </div>
@@ -927,9 +957,11 @@ export default function Home() {
         </div>
       </div>
 
-      {/* EVENT */}
-      <section id="event" className="event">
-        <div className="event-bg-marks">D5XX D5XX</div>
+      {/* EVENT DETAILS (left) + RSVP (right) */}
+      <section id="rsvp" className="event">
+        <div className="event-bg-marks" aria-hidden="true">D5XX D5XX</div>
+
+        {/* LEFT — all event details */}
         <div className="event-left">
           <h2 className="event-headline reveal">THE EVENT</h2>
           <p className="event-body reveal reveal-d1">
@@ -938,44 +970,25 @@ export default function Home() {
             a generation of creativity. Past and present Drogans, clients, and
             collaborators — together for one night.
           </p>
+          <div className="event-details">
+            <div className="event-detail reveal reveal-d2">
+              <p className="label">Date</p>
+              <p className="value" data-scramble="06.09">06.09</p>
+            </div>
+            <div className="event-detail reveal reveal-d3">
+              <p className="label">Location</p>
+              <p className="value tbd">TBD</p>
+            </div>
+            <div className="event-detail reveal reveal-d4">
+              <p className="label">Time</p>
+              <p className="value">7PM — LATE</p>
+            </div>
+          </div>
         </div>
-        <div className="event-right">
-          <div className="event-detail reveal reveal-d2">
-            <p className="label">Date</p>
-            <p className="value" data-scramble="06.09">06.09</p>
-          </div>
-          <div className="event-detail reveal reveal-d3">
-            <p className="label">Location</p>
-            <p className="value">THE BOX</p>
-          </div>
-          <div className="event-detail reveal reveal-d4">
-            <p className="label">Time</p>
-            <p className="value">7PM — LATE</p>
-          </div>
-        </div>
-      </section>
 
-      {/* PHASED LOCATION REVEAL */}
-      <section id="location" className="location">
-        <p className="mono-label location-label reveal">You are here</p>
-        <div className="location-ladder">
-          <div className="loc-step reveal">EARTH</div>
-          <div className="loc-step reveal reveal-d1">NORTH AMERICA</div>
-          <div className="loc-step reveal reveal-d2">UNITED STATES</div>
-          <div className="loc-step reveal reveal-d3">NEW YORK CITY</div>
-          <div className="loc-step reveal reveal-d4">MANHATTAN</div>
-          <div className="loc-step reveal reveal-d5">LOWER EAST SIDE</div>
-          <div className="loc-step reveal reveal-d6">THE BOX</div>
-          <div className="loc-step final reveal reveal-d7">HELL — SEE YOU THERE</div>
-        </div>
-      </section>
-
-      {/* RSVP */}
-      <section id="rsvp" className="rsvp">
-        <div className="rsvp-left">
-          <h2 className="rsvp-headline reveal">SEE YOU<br />THERE?</h2>
-        </div>
-        <div className="rsvp-right">
+        {/* RIGHT — RSVP */}
+        <div className="event-rsvp">
+          <h2 className="rsvp-head reveal">SEE YOU<br />THERE?</h2>
           <form onSubmit={handleSubmit} noValidate>
             <div className="field-wrap reveal">
               <label className="field-label" htmlFor="firstName">First Name</label>
@@ -994,24 +1007,17 @@ export default function Home() {
               />
             </div>
             <div className="field-wrap reveal reveal-d2">
-              <label className="field-label" htmlFor="email">Email</label>
+              <label className="field-label" htmlFor="email">Email Address</label>
               <input
                 type="email" id="email" name="email"
                 placeholder="you@email.com" required
                 value={form.email} onChange={handleChange} disabled={disabled}
               />
             </div>
-            <div className="field-wrap reveal reveal-d3">
-              <label className="field-label" htmlFor="phone">Phone (Optional)</label>
-              <input
-                type="tel" id="phone" name="phone"
-                placeholder="555-555-5555"
-                value={form.phone} onChange={handleChange} disabled={disabled}
-              />
-            </div>
 
+            {/* Photo & video release. Terms copy pending Dan S. confirmation. */}
             <div
-              className="waiver-row reveal reveal-d4"
+              className="waiver-row reveal reveal-d3"
               onClick={() => { if (!disabled) setWaiverChecked(v => !v) }}
               role="checkbox"
               aria-checked={waiverChecked}
@@ -1025,7 +1031,7 @@ export default function Home() {
             >
               <div className={`waiver-checkbox${waiverChecked ? ' checked' : ''}`} />
               <p className="waiver-text">
-                <strong>FILM &amp; PHOTO RELEASE:</strong> By checking this box,
+                <strong>PHOTO &amp; VIDEO RELEASE:</strong> By checking this box,
                 I consent to being photographed and/or filmed at D5XX on June 9
                 and grant Droga5 the right to use such images and recordings for
                 internal communications, archival, and social purposes.{' '}
@@ -1037,7 +1043,7 @@ export default function Home() {
               <button
                 ref={submitRef}
                 type="submit"
-                className="rsvp-submit reveal reveal-d5"
+                className="rsvp-submit reveal reveal-d4"
                 disabled={disabled}
               >
                 <span>{formState === 'submitting' ? 'Sending…' : 'Confirm Attendance'}</span>
@@ -1057,24 +1063,46 @@ export default function Home() {
         </div>
       </section>
 
-      {/* DRESS INSPO */}
+      {/* PHASED LOCATION REVEAL */}
+      <section id="location" className="location">
+        <p className="mono-label location-label reveal">You are here</p>
+        <p className="location-note reveal reveal-d1">
+          Location unlocks in stages — final venue revealed soon.
+        </p>
+        <div className="location-ladder">
+          {LOCATION_STEPS.map((step, i) => {
+            const unlocked = phase >= step.phase
+            const revealed = unlocked && (!step.final || Boolean(VENUE_NAME))
+            const text = revealed
+              ? (step.final ? VENUE_NAME : step.name)
+              : redact(step.name)
+            return (
+              <div
+                key={step.name}
+                className={
+                  `loc-step reveal reveal-d${i}` +
+                  (step.final ? ' final' : '') +
+                  (revealed ? '' : ' locked')
+                }
+              >
+                {text}
+              </div>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* DRESS INSPO — placeholder until the moodboard lands */}
       <section id="dress" className="dress">
         <div className="dress-head">
           <h2 className="dress-headline reveal">DRESS INSPO</h2>
           <p className="dress-sub reveal reveal-d1">
-            Smart / Sharp. Shiny, tactile, statement. Wear what makes the room.
+            A moodboard is on the way. Check back soon for the full look.
           </p>
         </div>
-        <div className="dress-grid">
-          {[1, 2, 3, 4].map((n, i) => (
-            <div
-              key={n}
-              className={`dress-tile reveal reveal-d${i + 2}`}
-              data-n={String(n).padStart(2, '0')}
-            >
-              <img src={`/lookbook/${n}.jpg`} alt={`Dress inspo ${n}`} loading="lazy" />
-            </div>
-          ))}
+        <div className="dress-placeholder reveal reveal-d2">
+          <span className="dress-placeholder-mark">[ &nbsp;•&nbsp;•&nbsp;•&nbsp; ]</span>
+          <p>Moodboard — coming soon</p>
         </div>
       </section>
 

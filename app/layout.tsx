@@ -2,10 +2,10 @@ import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'D5XX — 20 Years of Droga5',
-  description: 'An invitation-only music night celebrating 20 years of Droga5. June 9 at The Box, NYC.',
+  description: 'An invitation-only music night celebrating 20 years of Droga5. June 9 in NYC.',
   openGraph: {
     title: 'D5XX — 20 Years of Droga5',
-    description: 'Celebrate with a music night to remember. June 9 · The Box · NYC.',
+    description: 'Celebrate with a music night to remember. June 9 · NYC.',
     type: 'website',
   },
 }

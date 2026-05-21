@@ -1023,10 +1023,6 @@ export default function Home() {
             <p className="value" data-scramble="06.09">06.09</p>
           </div>
           <div className="event-detail reveal reveal-d3">
-            <p className="label">Location</p>
-            <p className="value tbd">TBD</p>
-          </div>
-          <div className="event-detail reveal reveal-d4">
             <p className="label">Time</p>
             <p className="value">7PM — LATE</p>
           </div>

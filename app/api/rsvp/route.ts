@@ -40,21 +40,28 @@ export async function POST(req: NextRequest) {
     const toEmail = process.env.RSVP_TO_EMAIL || 'rsvp@droga5.com'
     const fromEmail = process.env.RSVP_FROM_EMAIL || 'onboarding@resend.dev'
 
-    // Organizer notification
-    await resend.emails.send({
+    // Organizer notification. resend.emails.send() does NOT throw on a rejected
+    // send — it returns { error } — so check it explicitly and log failures.
+    const organizerSend = await resend.emails.send({
       from: fromEmail,
       to: toEmail,
       subject: `D5XX RSVP — ${firstName} ${lastName}`,
       html: organizerEmailHtml({ firstName, lastName, email, photoWaiver }),
     })
+    if (organizerSend.error) {
+      console.error('[rsvp] organizer email failed:', JSON.stringify(organizerSend.error))
+    }
 
     // Guest confirmation
-    await resend.emails.send({
+    const guestSend = await resend.emails.send({
       from: fromEmail,
       to: email,
       subject: `You're on the list — D5XX · June 9`,
       html: guestConfirmationHtml({ firstName }),
     })
+    if (guestSend.error) {
+      console.error('[rsvp] guest email failed:', JSON.stringify(guestSend.error))
+    }
 
     return NextResponse.json({ success: true })
   } catch (err) {

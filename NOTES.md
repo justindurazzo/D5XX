@@ -62,9 +62,47 @@ as the system of record for PII:
 - **Terms** — the photo/video release wording links to `/terms`. That copy is
   **pending Dan S. confirmation** before launch.
 
+## Domain & email setup (d5xx.com)
+
+Until `d5xx.com` is purchased and configured, two things are limited:
+
+1. The site runs on a temporary Vercel URL instead of `d5xx.com`.
+2. **Guest confirmation emails do not send.** Resend only delivers to the Resend
+   account's own address until a sending domain is verified — so real guests get no
+   email. This is a hard launch blocker.
+
+Once `d5xx.com` is purchased and the registrar's DNS is editable, do all three:
+
+### 1. Point the domain at the site (Vercel)
+
+- Vercel → project `d5-xx` → Settings → Domains → **Add** → `d5xx.com`.
+- Vercel shows the DNS records to add at the registrar. Typically:
+  - apex `d5xx.com` → **A** record → `76.76.21.21`
+  - `www` → **CNAME** → `cname.vercel-dns.com`
+- Use whatever Vercel displays — those values are authoritative.
+
+### 2. Verify the domain in Resend — this is what unblocks guest emails
+
+- Resend → **Domains** → **Add Domain** → `d5xx.com`.
+- Resend shows a set of DNS records — add **all** of them at the registrar, verbatim:
+  - an **MX** record (bounce handling, on a `send` subdomain)
+  - an **SPF** `TXT` record
+  - a **DKIM** `TXT` record — a long unique key, copy it exactly
+  - (recommended) a **DMARC** `TXT` record
+- Wait for Resend to show the domain as **Verified** (minutes to a few hours).
+
+### 3. Set the from-address
+
+- In Vercel env vars, set `RSVP_FROM_EMAIL` to an address on the verified domain,
+  e.g. `rsvp@d5xx.com`. Redeploy.
+- After this, every guest receives a confirmation email.
+
+DNS changes propagate slowly — allow at least a half-day of buffer before 05/26.
+
 ## Open items (owned elsewhere)
 
-- `d5xx.com` purchase — Manini + Mike Alvez.
+- `d5xx.com` purchase — Manini + Mike Alvez. See **Domain & email setup** above for
+  the steps to run once it's bought.
 - RSVP confirmation email — final design + copy still owed (current template is a
   functional placeholder).
 - Dress Inspo — moodboard pending; the section currently shows a "coming soon"

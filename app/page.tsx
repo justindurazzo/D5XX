@@ -1053,9 +1053,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* MIXER — interactive music module, gated behind the P push button */}
-      <MixerSection />
-
       {/* PHASED LOCATION REVEAL */}
       <section id="location" className="location">
         <p className="mono-label location-label reveal">You are here</p>
@@ -1084,6 +1081,9 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {/* MIXER — interactive music module, gated behind the P push button */}
+      <MixerSection />
 
       {/* DRESS INSPO — placeholder until the moodboard lands */}
       <section id="dress" className="dress">

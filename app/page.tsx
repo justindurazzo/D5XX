@@ -271,11 +271,6 @@ export default function Home() {
 
   const disabled = formState === 'submitting' || formState === 'success'
 
-  const marqueeItems = [
-    'D5XX', '·', '20 YEARS OF DROGA5', '·', 'JUNE 9', '·', 'NYC', '·',
-    '7PM — LATE', '·', 'INVITATION ONLY', '·', 'CELEBRATE WITH A MUSIC NIGHT TO REMEMBER', '·',
-  ]
-
   return (
     <>
       <style>{`
@@ -457,51 +452,14 @@ export default function Home() {
           to { opacity: 1; transform: translateY(0); }
         }
 
-        /* ───────── MARQUEE ───────── */
-        .marquee {
-          background: var(--black);
-          border-top: 1px solid var(--rule-dark);
-          border-bottom: 1px solid var(--rule-dark);
-          padding: 0.85rem 0;
-          overflow: hidden;
-          white-space: nowrap;
-        }
-        .marquee-track {
-          display: inline-flex;
-          gap: 2.5rem;
-          padding-right: 2.5rem;
-          animation: marquee 32s linear infinite;
-          font-family: 'DM Mono', monospace;
-          font-size: 0.7rem;
-          letter-spacing: 0.24em;
-          text-transform: uppercase;
-          color: var(--white);
-        }
-        .marquee-track span.dim { color: var(--green); opacity: 0.85; }
-        @keyframes marquee {
-          from { transform: translateX(0); }
-          to   { transform: translateX(-50%); }
-        }
-
-        /* ───────── EVENT + RSVP (event details left · RSVP right) ───────── */
-        .event {
-          background: var(--gray-light);
-          color: var(--black);
-          padding: 5rem 2.5rem 6rem;
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 3rem 4rem;
-          position: relative;
-          overflow: hidden;
-        }
-        .event-bg-marks {
+        /* ───────── SHARED: section background watermark ───────── */
+        .bg-marks {
           position: absolute;
           inset: 0;
           pointer-events: none;
           font-family: 'Archivo Black', sans-serif;
           font-size: clamp(200px, 30vw, 420px);
           color: transparent;
-          -webkit-text-stroke: 1px rgba(10,10,10,0.06);
           white-space: nowrap;
           letter-spacing: -0.02em;
           top: 8%;
@@ -511,77 +469,50 @@ export default function Home() {
           transform-origin: left center;
           animation: drift 40s linear infinite;
         }
+        .rsvp .bg-marks { -webkit-text-stroke: 1px rgba(10,10,10,0.06); }
+        .event .bg-marks { -webkit-text-stroke: 1px rgba(245,243,238,0.06); }
         @keyframes drift {
           from { transform: scaleX(1.1) translateX(0); }
           to   { transform: scaleX(1.1) translateX(-12%); }
         }
-        .event-left, .event-rsvp { position: relative; z-index: 1; }
 
-        /* ── left column: all event details ── */
-        .event-headline {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: clamp(48px, 6vw, 96px);
-          line-height: 0.92;
-          letter-spacing: -0.015em;
-          transform: scaleX(1.1);
-          transform-origin: left center;
-          margin-bottom: 1.5rem;
-        }
-        .event-body {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.78rem;
-          line-height: 1.7;
+        /* ───────── RSVP — "SEE YOU THERE?" (light) ───────── */
+        .rsvp {
+          background: var(--gray-light);
           color: var(--black);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          max-width: 42ch;
+          padding: 5.5rem 2.5rem 6rem;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 3rem 4rem;
+          position: relative;
+          overflow: hidden;
         }
-        .event-details {
-          display: flex;
-          flex-direction: column;
-          gap: 1.75rem;
-          margin-top: 3rem;
-          padding-top: 2.5rem;
-          border-top: 1px solid var(--rule-light);
-        }
-        .event-detail .label {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.65rem;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: var(--black);
-          opacity: 0.55;
-          margin-bottom: 0.5rem;
-        }
-        .event-detail .value {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: clamp(36px, 4.5vw, 64px);
-          letter-spacing: -0.01em;
-          line-height: 1;
-          transform: scaleX(1.1);
-          transform-origin: left center;
-          color: var(--black);
-        }
-        .event-detail .value.tbd { color: var(--ink-dim); }
+        .rsvp-left, .rsvp-right,
+        .event-left, .event-right { position: relative; z-index: 1; }
 
-        /* ── right column: RSVP ── */
-        .event-rsvp { display: flex; flex-direction: column; }
-        .rsvp-head {
+        .rsvp-left { display: flex; align-items: center; }
+        .rsvp-headline {
           font-family: 'Archivo Black', sans-serif;
-          font-size: clamp(40px, 5vw, 80px);
-          line-height: 0.9;
+          font-size: clamp(72px, 13vw, 210px);
+          line-height: 0.82;
           letter-spacing: -0.02em;
           color: var(--black);
-          transform: scaleX(1.1);
+          transform: scaleX(1.08);
           transform-origin: left center;
-          margin-bottom: 2rem;
+        }
+
+        .rsvp-right { display: flex; flex-direction: column; justify-content: center; }
+
+        /* The form is a dark card with a green outline, sitting on the light section. */
+        .rsvp-form {
+          border: 1px solid var(--green);
+          background: var(--black);
         }
         .field-wrap {
-          border: 1px solid var(--rule-light);
-          padding: 0.9rem 1.1rem 1rem;
+          padding: 0.85rem 1.15rem 0.95rem;
+          border-bottom: 1px solid var(--rule-dark);
           background: transparent;
-          margin-bottom: -1px;
-          transition: border-color 0.3s, background 0.3s;
+          transition: background 0.3s;
           position: relative;
         }
         .field-wrap::after {
@@ -589,23 +520,19 @@ export default function Home() {
           position: absolute;
           left: 0; bottom: -1px;
           width: 0; height: 2px;
-          background: var(--green-deep);
+          background: var(--green);
           transition: width 0.45s cubic-bezier(0.16,1,0.3,1);
         }
-        .field-wrap:focus-within {
-          border-color: var(--green-deep);
-          background: rgba(0,255,99,0.07);
-        }
+        .field-wrap:focus-within { background: rgba(0,255,99,0.06); }
         .field-wrap:focus-within::after { width: 100%; }
         .field-label {
           font-family: 'DM Mono', monospace;
           font-size: 0.55rem;
           letter-spacing: 0.24em;
           text-transform: uppercase;
-          color: var(--black);
-          opacity: 0.55;
+          color: var(--gray-dim);
           display: block;
-          margin-bottom: 0.35rem;
+          margin-bottom: 0.3rem;
         }
         .field-wrap input {
           width: 100%;
@@ -614,40 +541,38 @@ export default function Home() {
           outline: none;
           font-family: 'DM Mono', monospace;
           font-size: 0.95rem;
-          color: var(--black);
+          color: var(--white);
           padding: 0;
           cursor: none;
-          caret-color: var(--green-deep);
+          caret-color: var(--green);
         }
-        .field-wrap input::placeholder { color: rgba(10,10,10,0.3); }
+        .field-wrap input::placeholder { color: rgba(245,243,238,0.28); }
         .field-wrap input:disabled { opacity: 0.5; }
 
         .waiver-row {
-          border: 1px solid var(--rule-light);
-          padding: 1rem 1.1rem;
+          padding: 1rem 1.15rem;
           display: flex;
-          gap: 1rem;
+          gap: 0.9rem;
           align-items: flex-start;
           cursor: pointer;
-          margin-top: 0.4rem;
-          transition: border-color 0.3s, background 0.3s;
+          transition: background 0.3s;
         }
-        .waiver-row:hover { border-color: var(--green-deep); background: rgba(0,255,99,0.05); }
+        .waiver-row:hover { background: rgba(0,255,99,0.05); }
         .waiver-checkbox {
-          width: 14px; height: 14px;
-          border: 1px solid var(--green-deep);
+          width: 15px; height: 15px;
+          border: 1px solid var(--green);
           background: transparent;
           flex-shrink: 0;
-          margin-top: 4px;
+          margin-top: 3px;
           transition: background 0.18s, transform 0.18s;
           position: relative;
         }
-        .waiver-checkbox.checked { background: var(--green-deep); transform: scale(1.05); }
+        .waiver-checkbox.checked { background: var(--green); transform: scale(1.05); }
         .waiver-checkbox.checked::after {
           content: '';
           position: absolute;
           inset: 2px;
-          background: var(--green-deep);
+          background: var(--green);
           animation: pop 0.4s cubic-bezier(0.16,1,0.3,1);
         }
         @keyframes pop {
@@ -660,18 +585,19 @@ export default function Home() {
           font-size: 0.62rem;
           line-height: 1.65;
           letter-spacing: 0.04em;
-          color: var(--ink-dim);
+          color: var(--gray-dim);
           text-transform: uppercase;
         }
-        .waiver-text strong { color: var(--green-deep); font-weight: 500; }
+        .waiver-text strong { color: var(--green); font-weight: 500; }
         .waiver-text a {
-          color: var(--black);
+          color: var(--white);
           text-decoration: underline;
           text-underline-offset: 3px;
         }
 
         .rsvp-submit {
-          margin-top: 0.4rem;
+          margin-top: 0.9rem;
+          width: 100%;
           background: var(--green);
           color: var(--black);
           font-family: 'DM Mono', monospace;
@@ -679,7 +605,7 @@ export default function Home() {
           letter-spacing: 0.28em;
           text-transform: uppercase;
           padding: 1.1rem 1.2rem;
-          border: 1px solid var(--green-deep);
+          border: 1px solid var(--green);
           cursor: none;
           display: flex;
           align-items: center;
@@ -693,16 +619,72 @@ export default function Home() {
         .rsvp-submit:hover:not(:disabled) .arrow { transform: translateX(6px); }
 
         .form-msg {
-          padding: 1rem 1.1rem;
+          padding: 1rem 1.15rem;
           font-family: 'DM Mono', monospace;
           font-size: 0.68rem;
           letter-spacing: 0.1em;
           text-transform: uppercase;
-          margin-top: 0.4rem;
+          margin-top: 0.9rem;
           animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1);
         }
         .form-msg.success { border: 1px solid var(--green-deep); color: var(--green-deep); }
         .form-msg.error { border: 1px solid #d63b3b; color: #d63b3b; }
+
+        /* ───────── THE EVENT (dark) ───────── */
+        .event {
+          background: var(--black);
+          color: var(--white);
+          padding: 5.5rem 2.5rem 6rem;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 3rem 4rem;
+          position: relative;
+          overflow: hidden;
+        }
+        .event-left { display: flex; flex-direction: column; justify-content: center; }
+        .event-headline {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(48px, 6.5vw, 104px);
+          line-height: 0.92;
+          letter-spacing: -0.015em;
+          color: var(--white);
+          transform: scaleX(1.08);
+          transform-origin: left center;
+          margin-bottom: 1.6rem;
+        }
+        .event-body {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.78rem;
+          line-height: 1.75;
+          color: var(--gray-dim);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          max-width: 44ch;
+        }
+        .event-right {
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          gap: 2.4rem;
+        }
+        .event-detail .label {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: var(--gray-dim);
+          margin-bottom: 0.5rem;
+        }
+        .event-detail .value {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: clamp(40px, 5.4vw, 84px);
+          letter-spacing: -0.01em;
+          line-height: 1;
+          color: var(--white);
+          transform: scaleX(1.08);
+          transform-origin: left center;
+        }
+        .event-detail .value.tbd { color: var(--gray-dim); }
 
         /* ───────── LOCATION LADDER ───────── */
         .location {
@@ -888,11 +870,12 @@ export default function Home() {
         @media (max-width: 900px) {
           .hero { grid-template-columns: 1fr; padding: 2rem 1.25rem 3rem; }
           .hero-right { padding-top: 1.5rem; }
-          .event {
+          .rsvp, .event {
             grid-template-columns: 1fr;
-            gap: 3.5rem;
+            gap: 2.5rem;
             padding: 3.5rem 1.25rem 4.5rem;
           }
+          .rsvp-headline { font-size: clamp(64px, 17vw, 130px); }
           .dress { padding: 3.5rem 1.25rem 4.5rem; }
           .location { padding: 4rem 1.25rem 5rem; }
           .topbar { padding: 0.6rem 1.25rem; font-size: 0.6rem; }
@@ -910,7 +893,6 @@ export default function Home() {
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
           }
-          .marquee-track { animation: none; }
         }
       `}</style>
 
@@ -936,104 +918,72 @@ export default function Home() {
         </div>
       </section>
 
-      {/* MARQUEE */}
-      <div className="marquee" aria-hidden="true">
-        <div className="marquee-track">
-          {[...Array(3)].map((_, copy) => (
-            marqueeItems.map((item, i) => (
-              <span key={`${copy}-${i}`} className={item === '·' ? 'dim' : ''}>{item}</span>
-            ))
-          ))}
-        </div>
-      </div>
+      {/* RSVP — SEE YOU THERE? (headline left · form right) */}
+      <section id="rsvp" className="rsvp">
+        <div className="bg-marks" aria-hidden="true">D5XX D5XX</div>
 
-      {/* EVENT DETAILS (left) + RSVP (right) */}
-      <section id="rsvp" className="event">
-        <div className="event-bg-marks" aria-hidden="true">D5XX D5XX</div>
-
-        {/* LEFT — all event details */}
-        <div className="event-left">
-          <h2 className="event-headline reveal">THE EVENT</h2>
-          <p className="event-body reveal reveal-d1">
-            Twenty years of making it matter. An invitation-only evening
-            celebrating the decades of work, people, and the ideas that defined
-            a generation of creativity. Past and present Drogans, clients, and
-            collaborators — together for one night.
-          </p>
-          <div className="event-details">
-            <div className="event-detail reveal reveal-d2">
-              <p className="label">Date</p>
-              <p className="value" data-scramble="06.09">06.09</p>
-            </div>
-            <div className="event-detail reveal reveal-d3">
-              <p className="label">Location</p>
-              <p className="value tbd">TBD</p>
-            </div>
-            <div className="event-detail reveal reveal-d4">
-              <p className="label">Time</p>
-              <p className="value">7PM — LATE</p>
-            </div>
-          </div>
+        <div className="rsvp-left">
+          <h2 className="rsvp-headline reveal">SEE YOU<br />THERE?</h2>
         </div>
 
-        {/* RIGHT — RSVP */}
-        <div className="event-rsvp">
-          <h2 className="rsvp-head reveal">SEE YOU<br />THERE?</h2>
+        <div className="rsvp-right">
           <form onSubmit={handleSubmit} noValidate>
-            <div className="field-wrap reveal">
-              <label className="field-label" htmlFor="firstName">First Name</label>
-              <input
-                type="text" id="firstName" name="firstName"
-                placeholder="David" required
-                value={form.firstName} onChange={handleChange} disabled={disabled}
-              />
-            </div>
-            <div className="field-wrap reveal reveal-d1">
-              <label className="field-label" htmlFor="lastName">Last Name</label>
-              <input
-                type="text" id="lastName" name="lastName"
-                placeholder="Droga" required
-                value={form.lastName} onChange={handleChange} disabled={disabled}
-              />
-            </div>
-            <div className="field-wrap reveal reveal-d2">
-              <label className="field-label" htmlFor="email">Email Address</label>
-              <input
-                type="email" id="email" name="email"
-                placeholder="you@email.com" required
-                value={form.email} onChange={handleChange} disabled={disabled}
-              />
-            </div>
+            <div className="rsvp-form reveal">
+              <div className="field-wrap">
+                <label className="field-label" htmlFor="firstName">First Name</label>
+                <input
+                  type="text" id="firstName" name="firstName"
+                  placeholder="David" required
+                  value={form.firstName} onChange={handleChange} disabled={disabled}
+                />
+              </div>
+              <div className="field-wrap">
+                <label className="field-label" htmlFor="lastName">Last Name</label>
+                <input
+                  type="text" id="lastName" name="lastName"
+                  placeholder="Droga" required
+                  value={form.lastName} onChange={handleChange} disabled={disabled}
+                />
+              </div>
+              <div className="field-wrap">
+                <label className="field-label" htmlFor="email">Email Address</label>
+                <input
+                  type="email" id="email" name="email"
+                  placeholder="you@email.com" required
+                  value={form.email} onChange={handleChange} disabled={disabled}
+                />
+              </div>
 
-            {/* Photo & video release. Terms copy pending Dan S. confirmation. */}
-            <div
-              className="waiver-row reveal reveal-d3"
-              onClick={() => { if (!disabled) setWaiverChecked(v => !v) }}
-              role="checkbox"
-              aria-checked={waiverChecked}
-              tabIndex={0}
-              onKeyDown={(e) => {
-                if ((e.key === ' ' || e.key === 'Enter') && !disabled) {
-                  e.preventDefault()
-                  setWaiverChecked(v => !v)
-                }
-              }}
-            >
-              <div className={`waiver-checkbox${waiverChecked ? ' checked' : ''}`} />
-              <p className="waiver-text">
-                <strong>PHOTO &amp; VIDEO RELEASE:</strong> By checking this box,
-                I consent to being photographed and/or filmed at D5XX on June 9
-                and grant Droga5 the right to use such images and recordings for
-                internal communications, archival, and social purposes.{' '}
-                <a href="/terms" target="_blank" rel="noreferrer">Read full terms</a>.
-              </p>
+              {/* Photo & video release. Terms copy pending Dan S. confirmation. */}
+              <div
+                className="waiver-row"
+                onClick={() => { if (!disabled) setWaiverChecked(v => !v) }}
+                role="checkbox"
+                aria-checked={waiverChecked}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if ((e.key === ' ' || e.key === 'Enter') && !disabled) {
+                    e.preventDefault()
+                    setWaiverChecked(v => !v)
+                  }
+                }}
+              >
+                <div className={`waiver-checkbox${waiverChecked ? ' checked' : ''}`} />
+                <p className="waiver-text">
+                  <strong>PHOTO &amp; VIDEO RELEASE:</strong> By checking this box,
+                  I consent to being photographed and/or filmed at D5XX on June 9
+                  and grant Droga5 the right to use such images and recordings for
+                  internal communications, archival, and social purposes.{' '}
+                  <a href="/terms" target="_blank" rel="noreferrer">Read full terms</a>.
+                </p>
+              </div>
             </div>
 
             {formState !== 'success' && (
               <button
                 ref={submitRef}
                 type="submit"
-                className="rsvp-submit reveal reveal-d4"
+                className="rsvp-submit reveal reveal-d1"
                 disabled={disabled}
               >
                 <span>{formState === 'submitting' ? 'Sending…' : 'Confirm Attendance'}</span>
@@ -1050,6 +1000,36 @@ export default function Home() {
               </div>
             )}
           </form>
+        </div>
+      </section>
+
+      {/* THE EVENT — copy left · date/location/time right */}
+      <section id="event" className="event">
+        <div className="bg-marks" aria-hidden="true">D5XX D5XX</div>
+
+        <div className="event-left">
+          <h2 className="event-headline reveal">THE EVENT</h2>
+          <p className="event-body reveal reveal-d1">
+            Twenty years of making it matter. An invitation-only evening
+            celebrating the decades of work, people, and the ideas that defined
+            a generation of creativity. Past and present Drogans, clients, and
+            collaborators — together for one night.
+          </p>
+        </div>
+
+        <div className="event-right">
+          <div className="event-detail reveal reveal-d2">
+            <p className="label">Date</p>
+            <p className="value" data-scramble="06.09">06.09</p>
+          </div>
+          <div className="event-detail reveal reveal-d3">
+            <p className="label">Location</p>
+            <p className="value tbd">TBD</p>
+          </div>
+          <div className="event-detail reveal reveal-d4">
+            <p className="label">Time</p>
+            <p className="value">7PM — LATE</p>
+          </div>
         </div>
       </section>
 

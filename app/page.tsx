@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import Mixer2 from '@/components/Mixer2'
 
 type FormState = 'idle' | 'submitting' | 'success' | 'error'
 
@@ -1051,6 +1052,9 @@ export default function Home() {
           </form>
         </div>
       </section>
+
+      {/* MIXER — interactive music module */}
+      <Mixer2 />
 
       {/* PHASED LOCATION REVEAL */}
       <section id="location" className="location">

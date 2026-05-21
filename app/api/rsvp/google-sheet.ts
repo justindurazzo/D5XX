@@ -78,8 +78,14 @@ export async function appendRsvpToSheet(row: RsvpRow): Promise<void> {
     return
   }
 
+  // Diagnostic — surfaces what RSVP_SHEET_ID actually holds so a misformatted
+  // value (full URL pasted, stray characters) is visible in the runtime logs.
+  console.warn(`[rsvp] sheetidlen=${sheetId.length} h=${JSON.stringify(sheetId.slice(0, 12))}`)
+
   try {
     const creds = JSON.parse(rawKey) as { client_email: string; private_key: string }
+    // Diagnostic — confirms which service account the key authenticates as.
+    console.warn(`[rsvp] sa=${creds.client_email}`)
     // Env vars store newlines as the literal characters "\n" — restore them.
     const privateKey = String(creds.private_key).replace(/\\n/g, '\n')
     const token = await getAccessToken(creds.client_email, privateKey)

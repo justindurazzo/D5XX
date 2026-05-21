@@ -172,13 +172,12 @@ export default function Home() {
     return () => observer.disconnect()
   }, [])
 
-  // Cursor-parallax on hero. Maps mouse position over #hero to CSS vars --mx/--my on each
-  // .hero-stack span. Each row gets a different depth so the type reads as layered, not a
-  // flat poster. Lerps via rAF for organic settle.
+  // Cursor-parallax on hero. Maps mouse position over #hero to CSS vars --mx/--my on the
+  // logo mark so it drifts subtly with the cursor. Lerps via rAF for an organic settle.
   useEffect(() => {
     const hero = document.getElementById('hero')
     if (!hero) return
-    const spans = hero.querySelectorAll<HTMLElement>('.hero-stack span')
+    const spans = hero.querySelectorAll<HTMLElement>('.hero-mark img')
     if (!spans.length) return
 
     let targetX = 0, targetY = 0, currentX = 0, currentY = 0
@@ -194,8 +193,8 @@ export default function Home() {
     const tick = () => {
       currentX += (targetX - currentX) * 0.08
       currentY += (targetY - currentY) * 0.08
-      spans.forEach((span, i) => {
-        const depth = (i + 1) * 8  // row 1: 8px max, row 2: 16px
+      spans.forEach((span) => {
+        const depth = 12
         span.style.setProperty('--mx', `${currentX * depth}px`)
         span.style.setProperty('--my', `${currentY * depth}px`)
       })
@@ -389,33 +388,24 @@ export default function Home() {
         .hero-left {
           display: flex;
           flex-direction: column;
-          justify-content: flex-start;
+          justify-content: center;
         }
-        .hero-stack {
-          font-family: 'Archivo Black', 'Bowlby One', sans-serif;
-          font-size: clamp(120px, 26vw, 380px);
-          line-height: 0.82;
-          letter-spacing: -0.025em;
-          display: flex;
-          flex-direction: column;
-          color: var(--white);
-        }
-        .hero-stack span {
+        .hero-mark { display: block; }
+        .hero-mark img {
           display: block;
-          transform: scaleX(1.15) translateX(-40px);
-          transform-origin: left center;
+          width: clamp(240px, 40vw, 560px);
+          height: auto;
           opacity: 0;
           filter: blur(18px);
-          animation: heroIn 1.05s cubic-bezier(0.18, 0.9, 0.2, 1) forwards;
+          transform: translateX(-40px);
+          animation: heroIn 1.1s 0.15s cubic-bezier(0.18, 0.9, 0.2, 1) forwards;
         }
-        .hero-stack span:nth-child(1) { animation-delay: 0.1s; }
-        .hero-stack span:nth-child(2) { animation-delay: 0.3s; }
         @keyframes heroIn {
           to {
             opacity: 1;
             filter: blur(0);
             /* End state uses --mx/--my so cursor parallax composes with the reveal */
-            transform: scaleX(1.15) translate(var(--mx, 0px), var(--my, 0px));
+            transform: translate(var(--mx, 0px), var(--my, 0px));
           }
         }
 
@@ -934,9 +924,8 @@ export default function Home() {
       {/* HERO */}
       <section id="hero" className="hero">
         <div className="hero-left">
-          <h1 className="hero-stack" aria-label="D5XX">
-            <span>D5</span>
-            <span>XX</span>
+          <h1 className="hero-mark">
+            <img src="/d5xx-logo.png" alt="D5XX" />
           </h1>
         </div>
         <div className="hero-right">

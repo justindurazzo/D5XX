@@ -1502,7 +1502,6 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
           grid-template-columns: repeat(5, 1fr) 1px auto;
           gap: 0.35rem;
           min-height: 110px;
-          max-height: 300px;
           flex: 1;
           align-items: stretch;
         }
@@ -1527,13 +1526,13 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         /* No position transitions — these were the source of the "sticky" lag. */
         .slider-fill { position: absolute; left: 0; right: 0; bottom: 0; background: #0a0a0a; }
         .slider-handle {
-          position: absolute; left: -3px; right: -3px; height: 14px;
+          position: absolute; left: -10px; right: -10px; height: 14px;
           background: #0a0a0a; transform: translateY(50%);
           pointer-events: none;
           transition: width 0.09s ease, height 0.09s ease, left 0.09s ease, right 0.09s ease;
         }
-        .slider-track:hover  .slider-handle { left: -6px; right: -6px; height: 16px; }
-        .slider-track:active .slider-handle { left: -10px; right: -10px; height: 22px; }
+        .slider-track:hover  .slider-handle { left: -13px; right: -13px; height: 16px; }
+        .slider-track:active .slider-handle { left: -17px; right: -17px; height: 22px; }
         .slider-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; }
 
         /* ─── Crossfader (Lafayette | Wall Street | The World) ─── */
@@ -1695,7 +1694,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
           .xy-instruct-touch { display: inline; }
         }
         .knob-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.6; }
-        .knob { width: 56px; height: 56px; border-radius: 50%; border: 1px solid #0a0a0a; background: #f5f3ee; position: relative; touch-action: none; cursor: none; }
+        .knob { width: 46px; height: 46px; border-radius: 50%; border: 1px solid #0a0a0a; background: #f5f3ee; position: relative; touch-action: none; cursor: none; }
         .knob::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: #fff; border: 1px solid rgba(10,10,10,0.4); }
         .knob-indicator { position: absolute; inset: 0; pointer-events: none; transform: rotate(var(--angle)); }
         .knob-indicator::after { content: ''; position: absolute; top: 8px; left: 50%; width: 2px; height: 14px; background: #0a0a0a; transform: translateX(-50%); }
@@ -1825,7 +1824,6 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
             grid-template-rows: 230px auto auto;
             gap: 0.65rem;
             min-height: 0;
-            max-height: none;
           }
           .slider-track { width: 20px; }
           .slider-handle { left: -8px; right: -8px; height: 16px; }

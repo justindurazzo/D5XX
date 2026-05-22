@@ -49,13 +49,13 @@ const PROGRESSION = [
 ] as const
 
 const INITIAL_SLIDERS: Sliders = {
-  drive: 0.65,
-  bass: 0.55,
-  melody: 0.4,  // lead hook pulled back — less pop, more atmospheric
+  drive: 0.74,  // more analog grit/drive — LCD Soundsystem rawness
+  bass: 0.62,   // driving, insistent low end
+  melody: 0.4,  // lead sits in the groove, not on top of it
   shuffle: 0.45,
-  echo: 0.48,   // more delay by default — spacier, moodier
+  echo: 0.48,   // dub-style delay
 }
-const INITIAL_BPM = 102 // slower than the old 110 — downtempo, less pop-bounce
+const INITIAL_BPM = 114 // groovy, propulsive — danceable but not bright pop
 const BPM_MIN = 80
 const BPM_MAX = 160
 
@@ -436,8 +436,8 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     tapeFlutter.connect(tapeFlutterDepth); tapeFlutterDepth.connect(tapeDelay.delayTime)
     tapeWow.start(); tapeFlutter.start()
     const tapeTone = ctx.createBiquadFilter(); tapeTone.type = 'lowpass'; tapeTone.Q.value = 0.5
-    // Rolled the master top down (was 16000) — warms the mix, takes the hi-fi pop sheen off.
-    tapeTone.frequency.value = 13000
+    // Master top end — warm and analog, but bright enough for the hats to cut (LCD-ish).
+    tapeTone.frequency.value = 14000
     tapeWowDepthRef.current = tapeWowDepth
     tapeFlutterDepthRef.current = tapeFlutterDepth
     tapeToneRef.current = tapeTone
@@ -501,7 +501,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const convPlate   = ctx.createConvolver(); convPlate.buffer   = makeIR(ctx, 'plate')
     const convChamber = ctx.createConvolver(); convChamber.buffer = makeIR(ctx, 'chamber')
     const reverbIn = ctx.createGain(); reverbIn.gain.value = 1.0
-    const reverbWet = ctx.createGain(); reverbWet.gain.value = 0.82
+    const reverbWet = ctx.createGain(); reverbWet.gain.value = 0.74
     const springGain  = ctx.createGain(); springGain.gain.value  = gL0
     const plateGain   = ctx.createGain(); plateGain.gain.value   = gW0
     const chamberGain = ctx.createGain(); chamberGain.gain.value = gWorld0
@@ -525,7 +525,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const drumSat = ctx.createWaveShaper()
     drumSat.curve = makeTanhCurve(2.5)
     drumSat.oversample = '2x'
-    const drums = ctx.createGain(); drums.gain.value = 0.92
+    const drums = ctx.createGain(); drums.gain.value = 0.99
     drums.connect(drumComp); drumComp.connect(drumSat); drumSat.connect(sceneWall)
     // Whole-kit room send — a little reverb off the drum bus glues the beats into a
     // space, so the kit reads as recorded-in-a-room rather than dry and synthetic.
@@ -1526,13 +1526,13 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         /* No position transitions — these were the source of the "sticky" lag. */
         .slider-fill { position: absolute; left: 0; right: 0; bottom: 0; background: #0a0a0a; }
         .slider-handle {
-          position: absolute; left: -10px; right: -10px; height: 14px;
+          position: absolute; left: -14px; right: -14px; height: 14px;
           background: #0a0a0a; transform: translateY(50%);
           pointer-events: none;
           transition: width 0.09s ease, height 0.09s ease, left 0.09s ease, right 0.09s ease;
         }
-        .slider-track:hover  .slider-handle { left: -13px; right: -13px; height: 16px; }
-        .slider-track:active .slider-handle { left: -17px; right: -17px; height: 22px; }
+        .slider-track:hover  .slider-handle { left: -18px; right: -18px; height: 16px; }
+        .slider-track:active .slider-handle { left: -22px; right: -22px; height: 22px; }
         .slider-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; }
 
         /* ─── Crossfader (Lafayette | Wall Street | The World) ─── */

@@ -293,7 +293,7 @@ export default function Home() {
           --ink-dim: rgba(10,10,10,0.55);
         }
 
-        html { scroll-behavior: smooth; }
+        html { scroll-behavior: smooth; overflow-x: hidden; }
         body {
           background: var(--black);
           color: var(--white);
@@ -899,6 +899,19 @@ export default function Home() {
           .cursor { display: none; }
           input, button, a, .waiver-row { cursor: auto !important; }
           .rsvp-submit { cursor: pointer !important; }
+        }
+        /* Phones — shrink the location ladder so the long step names fit the
+           viewport. The desktop sizes are floored tall by clamp() and would
+           otherwise run wider than the screen and shift the page sideways. */
+        @media (max-width: 600px) {
+          .loc-step:nth-child(1) { font-size: clamp(14px, 4.6vw, 26px); }
+          .loc-step:nth-child(2) { font-size: clamp(15px, 5.1vw, 29px); }
+          .loc-step:nth-child(3) { font-size: clamp(16px, 5.6vw, 32px); }
+          .loc-step:nth-child(4) { font-size: clamp(17px, 6vw, 35px); }
+          .loc-step:nth-child(5) { font-size: clamp(19px, 6.5vw, 38px); }
+          .loc-step:nth-child(6) { font-size: clamp(20px, 6.9vw, 40px); }
+          .loc-step.final { font-size: clamp(22px, 7.4vw, 44px); }
+          .loc-step::before { left: -1rem; }
         }
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after {

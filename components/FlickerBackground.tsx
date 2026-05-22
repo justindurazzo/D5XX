@@ -40,7 +40,9 @@ export default function FlickerBackground() {
         float t = floor(uTime * 16.0);                       // chunky tape frames
         float grain = smoothstep(0.80, 1.0, hash(frag + t * 1.7));   // sparse specks
         float fl = 0.45 + 0.55 * hash(vec2(t, 11.0));         // global flicker
-        float scan = 0.62 + 0.38 * sin((frag.y + uTime * 26.0) * 0.30);
+        // a slow, subtle horizontal bend so the scanlines aren't ruler-straight
+        float bend = sin(frag.x * 0.0055 + uTime * 0.6) * 5.0;
+        float scan = 0.62 + 0.38 * sin((frag.y + bend + uTime * 26.0) * 0.30);
         float band = smoothstep(0.975, 1.0, hash(vec2(floor(frag.y / 3.0), t)));
         float v = grain * fl * scan + band * 0.45 * fl;
         gl_FragColor = vec4(1.0, 1.0, 1.0, v * 0.16);

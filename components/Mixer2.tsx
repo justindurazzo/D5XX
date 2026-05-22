@@ -1444,23 +1444,24 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
       <style>{`
         /* Fill the frame below the 38px topbar and center the contents, so the whole
            mixer — headline, panel, scene fader — fits without running below the fold. */
-        .mixer { background: #f5f3ee; color: #0a0a0a; padding: 1.4rem 2.5rem; border-top: 1px solid rgba(10,10,10,0.08); --accent: #00FF63; box-sizing: border-box; min-height: calc(100vh - 38px); display: flex; flex-direction: column; justify-content: center; }
-        .mixer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 0.85rem; flex-wrap: wrap; }
+        .mixer { background: #f5f3ee; color: #0a0a0a; padding: 0.9rem 2.5rem; border-top: 1px solid rgba(10,10,10,0.08); --accent: #00FF63; box-sizing: border-box; min-height: calc(100vh - 38px); display: flex; flex-direction: column; justify-content: center; }
+        .mixer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
         .mixer-headline {
-          font-family: 'Archivo Black', sans-serif; font-size: clamp(30px, 3.8vw, 52px);
+          font-family: 'Archivo Black', sans-serif; font-size: clamp(26px, 3vw, 40px);
           line-height: 0.95; letter-spacing: -0.015em; transform: scaleX(1.1); transform-origin: left center;
         }
         .mixer-sub { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55; max-width: 36ch; }
 
-        .mixer-panel { border: 1px solid rgba(10,10,10,0.85); padding: 1.3rem 1.4rem; display: grid; grid-template-columns: 1fr auto; gap: 1.6rem; align-items: stretch; background: #f5f3ee; }
-        .mixer-left { display: flex; flex-direction: column; gap: 0.9rem; }
+        .mixer-panel { border: 1px solid rgba(10,10,10,0.85); padding: 0.9rem 1.4rem; display: grid; grid-template-columns: 1fr auto; gap: 1.6rem; align-items: stretch; background: #f5f3ee; }
+        .mixer-left { display: flex; flex-direction: column; gap: 0.6rem; }
 
         /* ─── Sliders: tighter spacing, wider tracks, NO transition lag ─── */
         .mixer-sliders {
           display: grid;
           grid-template-columns: repeat(5, 1fr) 1px auto;
           gap: 0.35rem;
-          min-height: 162px;
+          min-height: 110px;
+          max-height: 300px;
           flex: 1;
           align-items: stretch;
         }
@@ -1471,9 +1472,9 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         .slider-knobs {
           display: flex; flex-direction: column;
           align-items: center; justify-content: space-around;
-          padding: 0.3rem 0.2rem 0.3rem 0.5rem;
+          padding: 0.2rem 0.2rem 0.2rem 0.5rem;
           min-width: 84px;
-          gap: 0.7rem;
+          gap: 0.3rem;
         }
         .slider-col { display: flex; flex-direction: column; align-items: center; gap: 0.55rem; }
         .slider-val { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.16em; opacity: 0.55; height: 12px; }
@@ -1496,8 +1497,8 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
 
         /* ─── Crossfader (Lafayette | Wall Street | The World) ─── */
         .crossfader-3 {
-          display: flex; flex-direction: column; gap: 0.7rem;
-          padding-top: 0.8rem;
+          display: flex; flex-direction: column; gap: 0.55rem;
+          padding-top: 0.5rem;
           border-top: 1px solid rgba(10,10,10,0.12);
           margin-top: 0.4rem;
         }
@@ -1531,7 +1532,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
 
         /* ─── Right column ─── */
         .mixer-right { display: flex; flex-direction: column; justify-content: space-between; align-items: stretch; min-width: 220px; gap: 0.7rem; }
-        .knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; }
+        .knob-wrap { display: flex; flex-direction: column; align-items: center; gap: 0.25rem; }
 
         /* ─── X-Y Pad ─── */
         .xy-pad-wrap { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -1545,7 +1546,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         .xy-pad {
           position: relative;
           width: 100%;
-          height: 168px;
+          height: 128px;
           background: #fff;
           border: 1px solid #0a0a0a;
           cursor: none;
@@ -1653,11 +1654,11 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
           .xy-instruct-touch { display: inline; }
         }
         .knob-label { font-family: 'DM Mono', monospace; font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.6; }
-        .knob { width: 72px; height: 72px; border-radius: 50%; border: 1px solid #0a0a0a; background: #f5f3ee; position: relative; touch-action: none; cursor: none; }
+        .knob { width: 56px; height: 56px; border-radius: 50%; border: 1px solid #0a0a0a; background: #f5f3ee; position: relative; touch-action: none; cursor: none; }
         .knob::before { content: ''; position: absolute; inset: 6px; border-radius: 50%; background: #fff; border: 1px solid rgba(10,10,10,0.4); }
         .knob-indicator { position: absolute; inset: 0; pointer-events: none; transform: rotate(var(--angle)); }
         .knob-indicator::after { content: ''; position: absolute; top: 8px; left: 50%; width: 2px; height: 14px; background: #0a0a0a; transform: translateX(-50%); }
-        .knob-value { font-family: 'Archivo Black', sans-serif; font-size: 1.4rem; letter-spacing: -0.01em; line-height: 1; }
+        .knob-value { font-family: 'Archivo Black', sans-serif; font-size: 1.05rem; letter-spacing: -0.01em; line-height: 1; }
         .knob-suffix { font-family: 'DM Mono', monospace; font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; opacity: 0.6; margin-top: -2px; }
 
         .mixer-meta-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding-top: 0.5rem; border-top: 1px solid rgba(10,10,10,0.18); }
@@ -1783,6 +1784,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
             grid-template-rows: 230px auto auto;
             gap: 0.65rem;
             min-height: 0;
+            max-height: none;
           }
           .slider-track { width: 20px; }
           .slider-handle { left: -8px; right: -8px; height: 16px; }

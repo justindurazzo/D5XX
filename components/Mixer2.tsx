@@ -1888,7 +1888,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
       <div className="mixer-head">
         <h2 className="mixer-headline reveal">BITS &amp; BOBS</h2>
         <p className="mixer-sub reveal reveal-d1">
-          Slide the fader from Lafayette to The World. Mix the sliders. Five knobs, three scenes, infinite versions of the same song.
+          Slide the fader from Lafayette to The World. Mix the sliders. Three knobs, three scenes, infinite versions of the same song.
         </p>
       </div>
 

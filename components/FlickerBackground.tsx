@@ -13,7 +13,7 @@ export default function FlickerBackground() {
     if (!canvas) return
     const gl = canvas.getContext('webgl', {
       alpha: true,
-      premultipliedAlpha: false,
+      premultipliedAlpha: true,
       antialias: false,
     })
     if (!gl) return
@@ -37,15 +37,19 @@ export default function FlickerBackground() {
       }
       void main() {
         vec2 frag = gl_FragCoord.xy;
-        float t = floor(uTime * 13.0);                       // chunky tape frames
-        float grain = smoothstep(0.80, 1.0, hash(frag + t * 1.7));   // sparse specks
-        float fl = 0.45 + 0.55 * hash(vec2(t, 11.0));         // global flicker
-        // a slow, subtle horizontal bend so the scanlines aren't ruler-straight
-        float bend = sin(frag.x * 0.0055 + uTime * 0.6) * 5.0;
-        float scan = 0.62 + 0.38 * sin((frag.y + bend + uTime * 26.0) * 0.30);
-        float band = smoothstep(0.975, 1.0, hash(vec2(floor(frag.y / 3.0), t)));
-        float v = grain * fl * scan + band * 0.45 * fl;
-        gl_FragColor = vec4(1.0, 1.0, 1.0, v * 0.16);
+        float t = floor(uTime * 12.0);
+        // slow horizontal bend so the lines aren't ruler-straight
+        float bend = sin(frag.x * 0.0055 + uTime * 0.5) * 5.0;
+        // soft, slowly-drifting horizontal tape lines — the gentle analog texture
+        float lines = 0.5 + 0.5 * sin((frag.y + bend) * 0.18 - uTime * 1.6);
+        lines *= lines;
+        // sparse, faint grain dusting on top
+        float grain = smoothstep(0.93, 1.0, hash(frag + t * 1.7));
+        // gentle global flicker — small swing so it never spikes
+        float fl = 0.8 + 0.2 * hash(vec2(t, 11.0));
+        // premultiplied-alpha white, kept very low so it stays a muted texture
+        float a = (lines * 0.45 + grain * 0.55) * fl * 0.085;
+        gl_FragColor = vec4(a, a, a, a);
       }
     `)
     const prog = gl.createProgram()!
@@ -79,9 +83,11 @@ export default function FlickerBackground() {
     let raf = 0
     let visible = true
 
+    gl.clearColor(0, 0, 0, 0)
     const draw = (now: number) => {
       resize()
       gl.uniform1f(uTime, (now - start) / 1000)
+      gl.clear(gl.COLOR_BUFFER_BIT)
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
       // Reduced-motion: render a single static grain frame, then stop.
       raf = visible && !reduced ? requestAnimationFrame(draw) : 0

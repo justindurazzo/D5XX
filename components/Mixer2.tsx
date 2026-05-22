@@ -49,11 +49,11 @@ const PROGRESSION = [
 ] as const
 
 const INITIAL_SLIDERS: Sliders = {
-  drive: 0.74,  // more analog grit/drive — LCD Soundsystem rawness
-  bass: 0.62,   // driving, insistent low end
-  melody: 0.4,  // lead sits in the groove, not on top of it
-  shuffle: 0.45,
-  echo: 0.48,   // dub-style delay
+  drive: 0.74,  // analog grit — kept
+  bass: 0.39,   // pulled back — less clubby low end
+  melody: 0.72, // melody-forward — the hook leads
+  shuffle: 0.19,
+  echo: 0.21,
 }
 const INITIAL_BPM = 114 // groovy, propulsive — danceable but not bright pop
 const BPM_MIN = 80
@@ -223,9 +223,9 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
   const [section, setSection] = useState<0 | 1 | 2>(0)
 
   // User-controlled filter macro (0..100; 100 = fully open). Maps to 80Hz..18kHz exponentially.
-  const [filterPct, setFilterPct] = useState(100)
+  const [filterPct, setFilterPct] = useState(33)
   // Reverb wet (0..1). Default matches the previous fixed value so first play sounds the same.
-  const [reverbAmt, setReverbAmt] = useState(0.7)
+  const [reverbAmt, setReverbAmt] = useState(0.54)
   // Lo-fi bit crusher (0..100; 0 = transparent, 100 = obvious crunch).
   const [crushPct, setCrushPct] = useState(0)
   // One-shot "drag me" prompt on the X-Y pad after autoplay-reveal.
@@ -525,7 +525,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const drumSat = ctx.createWaveShaper()
     drumSat.curve = makeTanhCurve(2.5)
     drumSat.oversample = '2x'
-    const drums = ctx.createGain(); drums.gain.value = 0.99
+    const drums = ctx.createGain(); drums.gain.value = 0.88
     drums.connect(drumComp); drumComp.connect(drumSat); drumSat.connect(sceneWall)
     // Whole-kit room send — a little reverb off the drum bus glues the beats into a
     // space, so the kit reads as recorded-in-a-room rather than dry and synthetic.
@@ -604,7 +604,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const sub = ctx.createOscillator(); sub.type = 'sine'; sub.frequency.value = 48
     const subG = ctx.createGain()
     subG.gain.setValueAtTime(0.0001, t)
-    subG.gain.exponentialRampToValueAtTime(vel * 0.95, t + 0.006)
+    subG.gain.exponentialRampToValueAtTime(vel * 0.74, t + 0.006)
     subG.gain.exponentialRampToValueAtTime(0.0001, t + 0.62)
     sub.connect(subG); subG.connect(drums)
 
@@ -613,7 +613,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     o.frequency.exponentialRampToValueAtTime(44, t + 0.16) // longer sweep
     const g = ctx.createGain()
     g.gain.setValueAtTime(0.0001, t)
-    g.gain.exponentialRampToValueAtTime(Math.max(0.001, vel), t + 0.005)
+    g.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.82), t + 0.005)
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5)
     o.connect(g); g.connect(drums)
 
@@ -624,7 +624,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / len)
     const src = ctx.createBufferSource(); src.buffer = buf
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1300
-    const cg = ctx.createGain(); cg.gain.value = vel * 0.22
+    const cg = ctx.createGain(); cg.gain.value = vel * 0.13
     src.connect(hp); hp.connect(cg); cg.connect(drums)
     src.start(t)
 
@@ -635,7 +635,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     if (sc) {
       sc.gain.cancelScheduledValues(t)
       sc.gain.setValueAtTime(sc.gain.value, t)
-      sc.gain.linearRampToValueAtTime(0.22, t + 0.012)
+      sc.gain.linearRampToValueAtTime(0.65, t + 0.012)
       sc.gain.exponentialRampToValueAtTime(1.0, t + 0.28)
     }
     // Bass sidechain — lighter duck so the low end stays present but ungumes the kick.
@@ -661,7 +661,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
       const src = ctx.createBufferSource(); src.buffer = buf
       const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 1.4
       const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 900
-      const amp = vel * (last ? 0.55 : 0.32)
+      const amp = vel * (last ? 0.42 : 0.24)
       const g = ctx.createGain()
       g.gain.setValueAtTime(0.0001, t + off)
       g.gain.exponentialRampToValueAtTime(amp, t + off + 0.0015)
@@ -784,7 +784,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     peak.frequency.value = 10500; peak.gain.value = 1.6; peak.Q.value = 0.9
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
-    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.26), t + 0.004) // 4ms attack — brushed
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.21), t + 0.004) // 4ms attack — brushed
     amp.gain.exponentialRampToValueAtTime(0.0001, t + dur)
     const panV = ((step % 4) - 1.5) / 1.5 * 0.45
     const sp = ctx.createStereoPanner(); sp.pan.value = panV
@@ -884,7 +884,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     o.frequency.exponentialRampToValueAtTime(58, t + 0.08)
     const g = ctx.createGain()
     g.gain.setValueAtTime(0.0001, t)
-    g.gain.exponentialRampToValueAtTime(vel * 0.85, t + 0.003)
+    g.gain.exponentialRampToValueAtTime(vel * 0.72, t + 0.003)
     g.gain.exponentialRampToValueAtTime(0.0001, t + 0.26)
     o.connect(g); g.connect(bus)
 
@@ -894,7 +894,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     for (let i = 0; i < len; i++) ch[i] = (Math.random() * 2 - 1) * (1 - i / len)
     const src = ctx.createBufferSource(); src.buffer = buf
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1800
-    const cg = ctx.createGain(); cg.gain.value = vel * 0.5
+    const cg = ctx.createGain(); cg.gain.value = vel * 0.28
     src.connect(hp); hp.connect(cg); cg.connect(bus)
     src.start(t)
 
@@ -912,7 +912,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 8200
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
-    amp.gain.exponentialRampToValueAtTime(vel * 0.32, t + 0.001)
+    amp.gain.exponentialRampToValueAtTime(vel * 0.25, t + 0.001)
     amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.03)
     src.connect(hp); hp.connect(amp); amp.connect(lafBusRef.current!)
     src.start(t)

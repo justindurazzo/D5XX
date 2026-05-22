@@ -10,7 +10,7 @@ type FormState = 'idle' | 'submitting' | 'success' | 'error'
 // Phase 2 · 05/29 — Manhattan
 // Phase 3 · 06/02 — Lower East Side
 // Phase 4 · 06/08 — venue revealed
-// Steps above the current phase render redacted. Add ?phase=1..4 to the URL to
+// Steps above the current phase show "TBD". Add ?phase=1..4 to the URL to
 // preview any stage on the feedback site.
 const LOCATION_STEPS: { name: string; phase: number; final?: boolean }[] = [
   { name: 'EARTH', phase: 1 },
@@ -22,10 +22,8 @@ const LOCATION_STEPS: { name: string; phase: number; final?: boolean }[] = [
   { name: 'THE VENUE', phase: 4, final: true },
 ]
 // The venue name is revealed on 06/08. Left blank intentionally — fill this in
-// on the reveal date (the final ladder step stays redacted until then).
+// on the reveal date (the final ladder step shows "TBD" until then).
 const VENUE_NAME = ''
-
-const redact = (s: string) => s.replace(/[A-Za-z0-9]/g, '█')
 
 function computePhase(): number {
   const params = new URLSearchParams(window.location.search)
@@ -750,11 +748,11 @@ export default function Home() {
           line-height: 1;
         }
         .loc-step.final.lit { letter-spacing: 0em; }
-        /* Redacted steps — locked until their reveal phase. */
-        .loc-step.locked { color: rgba(245,243,238,0.16); }
-        .loc-step.locked.lit { color: rgba(245,243,238,0.16); }
+        /* Locked steps — show "TBD" until their reveal phase. */
+        .loc-step.locked { color: rgba(245,243,238,0.3); }
+        .loc-step.locked.lit { color: rgba(245,243,238,0.3); }
         .loc-step.locked.lit::before { width: 0; }
-        .loc-step.final.locked { color: rgba(0,255,99,0.22); }
+        .loc-step.final.locked { color: rgba(0,255,99,0.32); }
 
         /* ───────── DRESS INSPO (placeholder — moodboard pending) ───────── */
         .dress {
@@ -1040,7 +1038,7 @@ export default function Home() {
             const revealed = unlocked && (!step.final || Boolean(VENUE_NAME))
             const text = revealed
               ? (step.final ? VENUE_NAME : step.name)
-              : redact(step.name)
+              : 'TBD'
             return (
               <div
                 key={step.name}

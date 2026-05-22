@@ -145,6 +145,32 @@ function makePinkNoiseBuffer(ctx: AudioContext, seconds: number) {
   return buf
 }
 
+// Vinyl-crackle bed — sparse random transient clicks over near-silence. Raising the
+// amplitude to the 4th power keeps most clicks faint with the occasional louder pop,
+// the way real surface noise sits; looped under the mix it adds tape/record character.
+function makeCrackleBuffer(ctx: AudioContext, seconds: number) {
+  const sr = ctx.sampleRate
+  const len = Math.floor(sr * seconds)
+  const buf = ctx.createBuffer(2, len, sr)
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch)
+    let i = 0
+    while (i < len) {
+      // Gap to the next click — 4–94ms, so density averages roughly ~20/sec.
+      i += Math.floor(sr * (0.004 + Math.random() * 0.09))
+      if (i >= len) break
+      // A click: a short decaying spike, random polarity, 4th-power amplitude skew.
+      const amp = Math.pow(Math.random(), 4) * (Math.random() < 0.5 ? -1 : 1)
+      const clickLen = 1 + Math.floor(Math.random() * 5)
+      for (let j = 0; j < clickLen && i + j < len; j++) {
+        d[i + j] += amp * Math.exp(-j * 0.7)
+      }
+      i += clickLen
+    }
+  }
+  return buf
+}
+
 // Equal-power three-way blend across two segments (Lafayette → Wall Street → The World).
 // Combined RMS stays ≈ 1 at every fader position; only one adjacent pair is non-zero at a time.
 function threeBlend(s: number): [number, number, number] {
@@ -410,7 +436,8 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     tapeFlutter.connect(tapeFlutterDepth); tapeFlutterDepth.connect(tapeDelay.delayTime)
     tapeWow.start(); tapeFlutter.start()
     const tapeTone = ctx.createBiquadFilter(); tapeTone.type = 'lowpass'; tapeTone.Q.value = 0.5
-    tapeTone.frequency.value = 16000
+    // Rolled the master top down (was 16000) — warms the mix, takes the hi-fi pop sheen off.
+    tapeTone.frequency.value = 14000
     tapeWowDepthRef.current = tapeWowDepth
     tapeFlutterDepthRef.current = tapeFlutterDepth
     tapeToneRef.current = tapeTone
@@ -548,9 +575,23 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     vinylSrc.buffer = makePinkNoiseBuffer(ctx, 4)
     vinylSrc.loop = true
     const vinylBp = ctx.createBiquadFilter(); vinylBp.type = 'bandpass'; vinylBp.frequency.value = 3500; vinylBp.Q.value = 0.4
-    const vinylG = ctx.createGain(); vinylG.gain.value = 0.045
+    const vinylG = ctx.createGain(); vinylG.gain.value = 0.06
     vinylSrc.connect(vinylBp); vinylBp.connect(vinylG); vinylG.connect(master)
     vinylSrc.start()
+
+    // Vinyl crackle bed — sparse transient clicks (record/tape surface noise),
+    // band-limited and kept low so it reads as texture under the mix, not a distraction.
+    const crackleSrc = ctx.createBufferSource()
+    crackleSrc.buffer = makeCrackleBuffer(ctx, 8)
+    crackleSrc.loop = true
+    const crackleHp = ctx.createBiquadFilter()
+    crackleHp.type = 'highpass'; crackleHp.frequency.value = 1100; crackleHp.Q.value = 0.5
+    const crackleLp = ctx.createBiquadFilter()
+    crackleLp.type = 'lowpass'; crackleLp.frequency.value = 7800; crackleLp.Q.value = 0.5
+    const crackleG = ctx.createGain(); crackleG.gain.value = 0.42
+    crackleSrc.connect(crackleHp); crackleHp.connect(crackleLp)
+    crackleLp.connect(crackleG); crackleG.connect(master)
+    crackleSrc.start()
   }, [])
 
   // ═══════════ WALL STREET voices (current full-mix palette) ═══════════

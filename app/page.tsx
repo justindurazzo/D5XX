@@ -751,7 +751,6 @@ export default function Home() {
         /* Locked steps — show "TBD" until their reveal phase. */
         .loc-step.locked { color: rgba(245,243,238,0.3); }
         .loc-step.locked.lit { color: rgba(245,243,238,0.3); }
-        .loc-step.locked.lit::before { width: 0; }
         .loc-step.final.locked { color: rgba(0,255,99,0.32); }
 
         /* ───────── DRESS INSPO (placeholder — moodboard pending) ───────── */

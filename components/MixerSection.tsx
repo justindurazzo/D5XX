@@ -82,7 +82,7 @@ export default function MixerSection() {
             0 14px 0 0 rgba(245,243,238,0.5),
             0 18px 38px rgba(0,0,0,0.55);
           transition: transform 0.18s ease, box-shadow 0.18s ease;
-          animation: mxgBreathe 1.4s ease-in-out infinite;
+          animation: mxgBreathe 2s ease-in-out infinite;
           will-change: transform, box-shadow;
         }
         .mxg-key:hover {
@@ -111,7 +111,7 @@ export default function MixerSection() {
             box-shadow:
               0 14px 0 0 rgba(245,243,238,0.5),
               0 18px 38px rgba(0,0,0,0.55),
-              0 0 130px 14px rgba(0,255,99,0.9);
+              0 0 40px 4px rgba(0,255,99,0.27);
           }
         }
         .mxg-key:focus-visible { outline: 2px solid #00FF63; outline-offset: 8px; }

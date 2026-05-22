@@ -1851,7 +1851,8 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         }
 
         /* ───────────────── DARK THEME OVERRIDES ───────────────── */
-        .mix-page[data-theme="dark"] .mixer { background: #0a0a0a; color: #f5f3ee; }
+        /* Transparent so the FlickerBackground shows through on the homepage embed. */
+        .mix-page[data-theme="dark"] .mixer { background: transparent; color: #f5f3ee; }
         .mix-page[data-theme="dark"] .mixer-panel {
           background: #0a0a0a;
           border-color: rgba(245,243,238,0.85);

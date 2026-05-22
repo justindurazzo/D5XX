@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Mixer2 from './Mixer2'
+import FlickerBackground from './FlickerBackground'
 
 // Homepage embed of the Mixer2 module. Starts gated behind the big "P" push
 // button — the same unlock interaction as the standalone /mixer2 page — but the
@@ -36,7 +37,7 @@ export default function MixerSection() {
     // mix-page + data-theme="dark" activates Mixer2's built-in dark theme.
     <div className="mxg-embed mix-page" data-theme="dark">
       <style>{`
-        .mxg-embed { position: relative; }
+        .mxg-embed { position: relative; background: #0a0a0a; }
 
         /* ─── Locked gate — contained overlay over the (dark) mixer section ─── */
         .mxg-gate {
@@ -150,6 +151,8 @@ export default function MixerSection() {
 
         /* ─── Mixer fades up as the gate clears ─── */
         .mxg-stage {
+          position: relative;
+          z-index: 1;
           opacity: 0;
           transform: translateY(20px);
           transition:
@@ -166,6 +169,9 @@ export default function MixerSection() {
           .mxg-gate, .mxg-stage { transition: opacity 0.25s; }
         }
       `}</style>
+
+      {/* Animated white flicker / analog-tape static behind the mixer */}
+      <FlickerBackground />
 
       {/* Locked gate */}
       <div className={`mxg-gate${revealed ? ' mxg-gate-out' : ''}`} aria-hidden={revealed}>

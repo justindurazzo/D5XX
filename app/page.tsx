@@ -73,7 +73,7 @@ export default function Home() {
       idleTimer = setTimeout(() => cursor.classList.add('idle'), 600)
     }
     document.addEventListener('mousemove', move)
-    const hoverEls = document.querySelectorAll('a, button, input, .waiver-row')
+    const hoverEls = document.querySelectorAll('a, button, input, .waiver-row, .dress-tile')
     const expand = () => cursor.classList.add('expanded')
     const shrink = () => cursor.classList.remove('expanded')
     hoverEls.forEach(el => {
@@ -467,7 +467,7 @@ export default function Home() {
           transform-origin: left center;
           animation: drift 40s linear infinite;
         }
-        .rsvp .bg-marks { -webkit-text-stroke: 1px rgba(10,10,10,0.06); }
+        .rsvp .bg-marks, .dress .bg-marks { -webkit-text-stroke: 1px rgba(10,10,10,0.06); }
         .event .bg-marks { -webkit-text-stroke: 1px rgba(245,243,238,0.06); }
         @keyframes drift {
           from { transform: scaleX(1.1) translateX(0); }
@@ -753,19 +753,13 @@ export default function Home() {
         .loc-step.locked.lit { color: rgba(245,243,238,0.3); }
         .loc-step.final.locked { color: rgba(0,255,99,0.32); }
 
-        /* ───────── DRESS INSPO (placeholder — moodboard pending) ───────── */
+        /* ───────── DRESS INSPO ───────── */
         .dress {
           background: var(--gray-light);
           color: var(--black);
           padding: 5rem 2.5rem 6rem;
-        }
-        .dress-head {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-between;
-          gap: 2rem;
-          margin-bottom: 2.5rem;
-          flex-wrap: wrap;
+          position: relative;
+          overflow: hidden;
         }
         .dress-headline {
           font-family: 'Archivo Black', sans-serif;
@@ -774,45 +768,36 @@ export default function Home() {
           letter-spacing: -0.015em;
           transform: scaleX(1.1);
           transform-origin: left center;
+          position: relative;
+          z-index: 1;
+          margin-bottom: 2.5rem;
         }
-        .dress-sub {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.7rem;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: var(--black);
-          opacity: 0.6;
-          max-width: 32ch;
+        .dress-grid {
+          position: relative;
+          z-index: 1;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 0.8rem;
         }
-        .dress-placeholder {
-          border: 1px dashed rgba(10,10,10,0.28);
-          background: repeating-linear-gradient(
-            45deg,
-            transparent, transparent 14px,
-            rgba(10,10,10,0.035) 14px, rgba(10,10,10,0.035) 28px
-          );
-          min-height: 340px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 1.1rem;
-          text-align: center;
-          padding: 3rem 1.5rem;
+        .dress-tile {
+          aspect-ratio: 1 / 1;
+          position: relative;
+          overflow: hidden;
+          background: #d6d3cd;
+          cursor: none;
         }
-        .dress-placeholder-mark {
-          font-family: 'Archivo Black', sans-serif;
-          font-size: clamp(28px, 4vw, 52px);
-          letter-spacing: 0.1em;
-          color: var(--ink-dim);
+        .dress-tile img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
+          transform: scale(1.02);
+          transition: transform 0.7s cubic-bezier(0.16,1,0.3,1),
+                      filter 0.6s cubic-bezier(0.16,1,0.3,1);
         }
-        .dress-placeholder p {
-          font-family: 'DM Mono', monospace;
-          font-size: 0.7rem;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: var(--black);
-          opacity: 0.55;
+        .dress-tile:hover img {
+          transform: scale(1.07);
+          filter: brightness(1.05);
         }
 
         /* ───────── FOOTER ───────── */
@@ -873,6 +858,7 @@ export default function Home() {
           }
           .rsvp-headline { font-size: clamp(64px, 17vw, 130px); }
           .dress { padding: 3.5rem 1.25rem 4.5rem; }
+          .dress-grid { grid-template-columns: repeat(2, 1fr); }
           .location { padding: 4rem 1.25rem 5rem; }
           .topbar { padding: 0.6rem 1.25rem; font-size: 0.6rem; }
           footer { flex-direction: column; gap: 1rem; align-items: flex-start; padding: 2rem 1.25rem; }
@@ -1057,17 +1043,16 @@ export default function Home() {
       {/* MIXER — interactive music module, gated behind the P push button */}
       <MixerSection />
 
-      {/* DRESS INSPO — placeholder until the moodboard lands */}
+      {/* DRESS INSPO */}
       <section id="dress" className="dress">
-        <div className="dress-head">
-          <h2 className="dress-headline reveal">DRESS INSPO</h2>
-          <p className="dress-sub reveal reveal-d1">
-            A moodboard is on the way. Check back soon for the full look.
-          </p>
-        </div>
-        <div className="dress-placeholder reveal reveal-d2">
-          <span className="dress-placeholder-mark">[ &nbsp;•&nbsp;•&nbsp;•&nbsp; ]</span>
-          <p>Moodboard — coming soon</p>
+        <div className="bg-marks" aria-hidden="true">D5XX D5XX</div>
+        <h2 className="dress-headline reveal">DRESS INSPO</h2>
+        <div className="dress-grid">
+          {[1, 2, 3, 4].map((n, i) => (
+            <div key={n} className={`dress-tile reveal reveal-d${i + 1}`}>
+              <img src={`/lookbook/${n}.jpg`} alt={`Dress inspo ${n}`} loading="lazy" />
+            </div>
+          ))}
         </div>
       </section>
 

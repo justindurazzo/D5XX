@@ -55,7 +55,7 @@ const INITIAL_SLIDERS: Sliders = {
   shuffle: 0.19,
   echo: 0.21,
 }
-const INITIAL_BPM = 95 // laid-back, downtempo — cool rather than club
+const INITIAL_BPM = 100 // laid-back, downtempo — cool rather than club
 const BPM_MIN = 80
 const BPM_MAX = 160
 

@@ -51,11 +51,11 @@ const PROGRESSION = [
 const INITIAL_SLIDERS: Sliders = {
   drive: 0.65,
   bass: 0.55,
-  melody: 0.5,
+  melody: 0.4,  // lead hook pulled back — less pop, more atmospheric
   shuffle: 0.45,
-  echo: 0.35,
+  echo: 0.48,   // more delay by default — spacier, moodier
 }
-const INITIAL_BPM = 110
+const INITIAL_BPM = 102 // slower than the old 110 — downtempo, less pop-bounce
 const BPM_MIN = 80
 const BPM_MAX = 160
 
@@ -437,7 +437,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     tapeWow.start(); tapeFlutter.start()
     const tapeTone = ctx.createBiquadFilter(); tapeTone.type = 'lowpass'; tapeTone.Q.value = 0.5
     // Rolled the master top down (was 16000) — warms the mix, takes the hi-fi pop sheen off.
-    tapeTone.frequency.value = 14000
+    tapeTone.frequency.value = 13000
     tapeWowDepthRef.current = tapeWowDepth
     tapeFlutterDepthRef.current = tapeFlutterDepth
     tapeToneRef.current = tapeTone
@@ -501,7 +501,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const convPlate   = ctx.createConvolver(); convPlate.buffer   = makeIR(ctx, 'plate')
     const convChamber = ctx.createConvolver(); convChamber.buffer = makeIR(ctx, 'chamber')
     const reverbIn = ctx.createGain(); reverbIn.gain.value = 1.0
-    const reverbWet = ctx.createGain(); reverbWet.gain.value = 0.7
+    const reverbWet = ctx.createGain(); reverbWet.gain.value = 0.82
     const springGain  = ctx.createGain(); springGain.gain.value  = gL0
     const plateGain   = ctx.createGain(); plateGain.gain.value   = gW0
     const chamberGain = ctx.createGain(); chamberGain.gain.value = gWorld0
@@ -525,7 +525,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     const drumSat = ctx.createWaveShaper()
     drumSat.curve = makeTanhCurve(2.5)
     drumSat.oversample = '2x'
-    const drums = ctx.createGain(); drums.gain.value = 1.0
+    const drums = ctx.createGain(); drums.gain.value = 0.92
     drums.connect(drumComp); drumComp.connect(drumSat); drumSat.connect(sceneWall)
     // Whole-kit room send — a little reverb off the drum bus glues the beats into a
     // space, so the kit reads as recorded-in-a-room rather than dry and synthetic.

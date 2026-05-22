@@ -1305,9 +1305,10 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
 
     // BASS — continues across all sections (the spine of the song)
     if (!m.BASS && (sub === 0 || sub === 2)) {
-      // Hypnotic syncopated riff: insistent root, two rests for groove, and a b7
-      // leading tone that pulls back to the root each bar. null = rest (no note).
-      const pat: (number | null)[] = [0, 0, null, 0, 7, 0, null, 10]
+      // Root-driven hypnotic riff: insistent root with two rests for groove and a
+      // single stable fifth lift late in the bar — no b7 leading tone, no octave
+      // jumps, so it reads as a relentless pulse rather than a pop hook. null = rest.
+      const pat: (number | null)[] = [0, 0, null, 0, 0, 0, null, 7]
       const idx = Math.floor(step / 2) % pat.length
       const off = pat[idx]
       if (inBuild) {
@@ -1316,8 +1317,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         bass(time + jitter() * 0.5, chord.bassRoot, vel, 260 + s.bass * 2400)
         flashLed('BASS', delayMsFor(time))
       } else if (off !== null) {
-        let hz = chord.bassRoot * Math.pow(2, off / 12)
-        if (s.bass > 0.55 && stepInBar === 14) hz *= 2
+        const hz = chord.bassRoot * Math.pow(2, off / 12)
         const vel = velJ((inBreakdown ? 0.45 : 0.6) + s.bass * 0.4)
         const cutoff = 260 + s.bass * 2400
         bass(time + jitter() * 0.5, hz, vel, cutoff)

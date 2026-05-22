@@ -1486,12 +1486,21 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         /* Fill the frame below the 38px topbar and center the contents, so the whole
            mixer — headline, panel, scene fader — fits without running below the fold. */
         .mixer { background: #f5f3ee; color: #0a0a0a; padding: 0.9rem 2.5rem; border-top: 1px solid rgba(10,10,10,0.08); --accent: #00FF63; box-sizing: border-box; min-height: calc(100vh - 38px); display: flex; flex-direction: column; justify-content: center; }
-        .mixer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .mixer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 2rem; margin-bottom: 1.15rem; flex-wrap: wrap; }
         .mixer-headline {
           font-family: 'Archivo Black', sans-serif; font-size: clamp(26px, 3vw, 40px);
           line-height: 0.95; letter-spacing: -0.015em; transform: scaleX(1.1); transform-origin: left center;
         }
-        .mixer-sub { font-family: 'DM Mono', monospace; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; opacity: 0.55; max-width: 36ch; }
+        .mixer-sub {
+          font-family: 'DM Mono', monospace; font-size: 0.68rem;
+          letter-spacing: 0.18em; text-transform: uppercase;
+          max-width: 54ch;
+          opacity: 0;
+          transition: opacity 1.5s ease;
+        }
+        /* Fades in over 1.5s once the mixer is revealed (autoplay) — draws the eye
+           to the instructions so people know to play with it. */
+        .mixer-sub.mixer-sub-in { opacity: 0.55; }
 
         .mixer-panel { border: 1px solid rgba(10,10,10,0.85); padding: 0.9rem 1.4rem; display: grid; grid-template-columns: 1fr auto; gap: 1.6rem; align-items: stretch; background: #f5f3ee; }
         .mixer-left { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -1547,7 +1556,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
           font-family: 'DM Mono', monospace; font-size: 0.62rem;
           letter-spacing: 0.22em; text-transform: uppercase;
         }
-        .cf3-labels span { transition: opacity 0.2s, font-weight 0.2s; opacity: 0.4; }
+        .cf3-labels span { transition: opacity 0.2s, font-weight 0.2s; opacity: 0.55; color: var(--accent); }
         .cf3-labels span.active { opacity: 1; }
         .cf3-labels span:nth-child(1) { text-align: left; }
         .cf3-labels span:nth-child(2) { text-align: center; }
@@ -1929,7 +1938,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
 
       <div className="mixer-head">
         <h2 className="mixer-headline reveal">BITS &amp; BOBS</h2>
-        <p className="mixer-sub reveal reveal-d1">
+        <p className={`mixer-sub${autoplay ? ' mixer-sub-in' : ''}`}>
           Slide the fader from Lafayette to The World. Mix the sliders. Three knobs, three scenes, infinite versions of the same song.
         </p>
       </div>

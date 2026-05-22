@@ -1023,11 +1023,12 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     lastLeadHzRef.current = hz
     attachDrift(ctx, driftTargets, t, t + 0.87, 3)
 
-    // Lowpass with a soft filter bloom — opens over 260ms on attack, then settles.
-    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 3
-    lp.frequency.setValueAtTime(520, t)
-    lp.frequency.linearRampToValueAtTime(3600, t + 0.26)
-    lp.frequency.exponentialRampToValueAtTime(1400, t + 0.7)
+    // Lowpass with a soft filter bloom — opens gently over 340ms, then settles dark.
+    // Low Q + a modest peak keep it mellow rather than a sharp resonant sweep.
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 1.0
+    lp.frequency.setValueAtTime(480, t)
+    lp.frequency.linearRampToValueAtTime(2500, t + 0.34)
+    lp.frequency.exponentialRampToValueAtTime(1150, t + 0.82)
 
     // Gentle saturation to warm the saw stack.
     const drive = ctx.createWaveShaper()
@@ -1036,7 +1037,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
 
     const amp = ctx.createGain()
     amp.gain.setValueAtTime(0.0001, t)
-    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.24), t + 0.055) // 55ms soft attack
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.001, vel * 0.24), t + 0.08) // 80ms soft attack
     amp.gain.setValueAtTime(Math.max(0.001, vel * 0.24), t + 0.3)
     amp.gain.exponentialRampToValueAtTime(0.0001, t + 0.78) // long-ish release — gentle overlap
 

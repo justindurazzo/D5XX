@@ -269,6 +269,11 @@ export default function Home() {
 
   const disabled = formState === 'submitting' || formState === 'success'
 
+  const marqueeItems = [
+    'D5XX', '·', '20 YEARS OF DROGA5', '·', 'JUNE 9', '·', 'NYC', '·',
+    '7PM — LATE', '·', 'INVITATION ONLY', '·', 'CELEBRATE WITH A MUSIC NIGHT TO REMEMBER', '·',
+  ]
+
   return (
     <>
       <style>{`
@@ -448,6 +453,32 @@ export default function Home() {
         @keyframes fadeUp {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ───────── MARQUEE ───────── */
+        .marquee {
+          background: var(--black);
+          border-top: 1px solid var(--rule-dark);
+          border-bottom: 1px solid var(--rule-dark);
+          padding: 0.85rem 0;
+          overflow: hidden;
+          white-space: nowrap;
+        }
+        .marquee-track {
+          display: inline-flex;
+          gap: 2.5rem;
+          padding-right: 2.5rem;
+          animation: marquee 36s linear infinite;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.7rem;
+          letter-spacing: 0.24em;
+          text-transform: uppercase;
+          color: var(--white);
+        }
+        .marquee-track span.dim { color: var(--green); opacity: 0.85; }
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
         }
 
         /* ───────── SHARED: section background watermark ───────── */
@@ -875,6 +906,7 @@ export default function Home() {
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
           }
+          .marquee-track { animation: none; }
         }
       `}</style>
 
@@ -899,6 +931,17 @@ export default function Home() {
           <p className="hero-footer">20 YEARS<br />OF DROGA5</p>
         </div>
       </section>
+
+      {/* MARQUEE */}
+      <div className="marquee" aria-hidden="true">
+        <div className="marquee-track">
+          {[...Array(2)].map((_, copy) => (
+            marqueeItems.map((item, i) => (
+              <span key={`${copy}-${i}`} className={item === '·' ? 'dim' : ''}>{item}</span>
+            ))
+          ))}
+        </div>
+      </div>
 
       {/* RSVP — SEE YOU THERE? (headline left · form right) */}
       <section id="rsvp" className="rsvp">

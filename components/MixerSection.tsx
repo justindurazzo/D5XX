@@ -33,11 +33,12 @@ export default function MixerSection() {
   }, [revealed, pressed, reveal])
 
   return (
-    <div className="mxg-embed">
+    // mix-page + data-theme="dark" activates Mixer2's built-in dark theme.
+    <div className="mxg-embed mix-page" data-theme="dark">
       <style>{`
         .mxg-embed { position: relative; }
 
-        /* ─── Locked gate — contained overlay over the mixer section ─── */
+        /* ─── Locked gate — contained overlay over the (dark) mixer section ─── */
         .mxg-gate {
           position: absolute;
           inset: 0;
@@ -45,7 +46,7 @@ export default function MixerSection() {
           flex-direction: column;
           align-items: center;
           justify-content: center;
-          background: #f5f3ee;
+          background: #0a0a0a;
           z-index: 20;
           gap: 1.6rem;
           opacity: 1;
@@ -59,7 +60,7 @@ export default function MixerSection() {
           pointer-events: none;
         }
 
-        /* ─── The big "P" key ─── */
+        /* ─── The big "P" key — stays white, with a light drop edge on the dark gate ─── */
         .mxg-key {
           background: #fff;
           color: #0a0a0a;
@@ -77,8 +78,8 @@ export default function MixerSection() {
           cursor: none;
           position: relative;
           box-shadow:
-            0 14px 0 0 rgba(10,10,10,0.85),
-            0 18px 38px rgba(10,10,10,0.18);
+            0 14px 0 0 rgba(245,243,238,0.5),
+            0 18px 38px rgba(0,0,0,0.55);
           transition: transform 0.18s ease, box-shadow 0.18s ease;
           animation: mxgBreathe 3.4s ease-in-out infinite;
           will-change: transform, box-shadow;
@@ -86,29 +87,29 @@ export default function MixerSection() {
         .mxg-key:hover {
           transform: translateY(-3px);
           box-shadow:
-            0 17px 0 0 rgba(10,10,10,0.85),
-            0 22px 44px rgba(10,10,10,0.22);
+            0 17px 0 0 rgba(245,243,238,0.5),
+            0 22px 44px rgba(0,0,0,0.6);
         }
         .mxg-key:active,
         .mxg-key.mxg-pressed {
           transform: translateY(11px);
           box-shadow:
-            0 3px 0 0 rgba(10,10,10,0.85),
-            0 6px 16px rgba(10,10,10,0.15);
+            0 3px 0 0 rgba(245,243,238,0.5),
+            0 6px 16px rgba(0,0,0,0.4);
           transition: transform 0.06s ease, box-shadow 0.06s ease;
           animation: none;
         }
         @keyframes mxgBreathe {
           0%, 100% {
             box-shadow:
-              0 14px 0 0 rgba(10,10,10,0.85),
-              0 18px 38px rgba(10,10,10,0.18);
+              0 14px 0 0 rgba(245,243,238,0.5),
+              0 18px 38px rgba(0,0,0,0.55);
           }
           50% {
             box-shadow:
-              0 14px 0 0 rgba(10,10,10,0.85),
-              0 18px 38px rgba(10,10,10,0.18),
-              0 0 80px rgba(0,255,99,0.32);
+              0 14px 0 0 rgba(245,243,238,0.5),
+              0 18px 38px rgba(0,0,0,0.55),
+              0 0 90px rgba(0,255,99,0.45);
           }
         }
         .mxg-key:focus-visible { outline: 2px solid #00FF63; outline-offset: 8px; }
@@ -119,7 +120,7 @@ export default function MixerSection() {
           font-size: 0.78rem;
           letter-spacing: 0.3em;
           text-transform: uppercase;
-          color: #0a0a0a;
+          color: #f5f3ee;
           margin: 0;
           display: flex;
           align-items: center;
@@ -127,22 +128,23 @@ export default function MixerSection() {
         }
         .mxg-hint kbd {
           font-family: 'DM Mono', monospace;
-          background: #fff;
-          border: 1px solid #0a0a0a;
+          background: #1a1a1a;
+          color: #f5f3ee;
+          border: 1px solid #f5f3ee;
           padding: 3px 10px;
           font-size: 0.72rem;
           border-radius: 4px;
           font-weight: 500;
           letter-spacing: 0;
-          box-shadow: 0 2px 0 0 rgba(10,10,10,0.85);
+          box-shadow: 0 2px 0 0 rgba(245,243,238,0.7);
         }
         .mxg-sub {
           font-family: 'DM Mono', monospace;
           font-size: 0.6rem;
           letter-spacing: 0.32em;
           text-transform: uppercase;
-          color: #0a0a0a;
-          opacity: 0.45;
+          color: #f5f3ee;
+          opacity: 0.55;
           margin: 0;
         }
 

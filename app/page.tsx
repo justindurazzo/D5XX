@@ -716,27 +716,27 @@ export default function Home() {
 
         /* ───────── LOCATION LADDER ───────── */
         .location {
-          background: var(--black);
-          color: var(--white);
+          background: var(--gray-light);
+          color: var(--black);
           padding: 6rem 2.5rem 8rem;
-          border-top: 1px solid var(--rule-dark);
+          border-top: 1px solid var(--rule-light);
         }
         .location-label {
-          color: var(--green);
+          color: var(--green-deep);
           margin-bottom: 0.9rem;
           display: flex;
           align-items: center;
           gap: 1rem;
         }
         .location-label::before {
-          content: ''; width: 32px; height: 1px; background: var(--green);
+          content: ''; width: 32px; height: 1px; background: var(--green-deep);
         }
         .location-note {
           font-family: 'DM Mono', monospace;
           font-size: 0.62rem;
           letter-spacing: 0.16em;
           text-transform: uppercase;
-          color: var(--gray-dim);
+          color: var(--ink-dim);
           margin-bottom: 2.5rem;
         }
         .location-ladder {
@@ -748,7 +748,7 @@ export default function Home() {
           font-family: 'Archivo Black', sans-serif;
           letter-spacing: -0.015em;
           line-height: 0.95;
-          color: var(--gray-dim);
+          color: rgba(10,10,10,0.32);
           transform: scaleX(1.1);
           transform-origin: left center;
           transition: color 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.5s, letter-spacing 0.5s;
@@ -761,10 +761,10 @@ export default function Home() {
           top: 50%;
           width: 0;
           height: 1px;
-          background: var(--green);
+          background: var(--green-deep);
           transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
         }
-        .loc-step.lit { color: var(--white); }
+        .loc-step.lit { color: var(--black); }
         .loc-step.lit::before { width: 1.5rem; }
         .loc-step:nth-child(1) { font-size: clamp(28px, 3.2vw, 48px); }
         .loc-step:nth-child(2) { font-size: clamp(32px, 3.8vw, 56px); }
@@ -774,15 +774,15 @@ export default function Home() {
         .loc-step:nth-child(6) { font-size: clamp(54px, 6.6vw, 96px); }
         .loc-step.final {
           font-size: clamp(56px, 7vw, 110px);
-          color: var(--green);
+          color: var(--green-deep);
           margin-top: 0.8rem;
           line-height: 1;
         }
         .loc-step.final.lit { letter-spacing: 0em; }
         /* Locked steps — show "TBD" until their reveal phase. */
-        .loc-step.locked { color: rgba(245,243,238,0.3); }
-        .loc-step.locked.lit { color: rgba(245,243,238,0.3); }
-        .loc-step.final.locked { color: rgba(0,255,99,0.32); }
+        .loc-step.locked { color: rgba(10,10,10,0.26); }
+        .loc-step.locked.lit { color: rgba(10,10,10,0.26); }
+        .loc-step.final.locked { color: rgba(0,204,79,0.42); }
 
         /* ───────── DRESS INSPO ───────── */
         .dress {

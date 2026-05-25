@@ -116,6 +116,28 @@ export default function MixerSection() {
         }
         .mxg-key:focus-visible { outline: 2px solid #00FF63; outline-offset: 8px; }
 
+        /* The "P" character bobs gently and gives a quick wiggle every cycle so
+           the key reads as alive and asks to be pressed. Wrapped in a span so
+           its animation doesn't fight the button's own hover/press transforms;
+           the wiggle stops the moment the user hovers or presses. */
+        .mxg-key-letter {
+          display: inline-block;
+          animation: mxgAlive 5s ease-in-out infinite;
+          transform-origin: center 60%;
+          will-change: transform;
+        }
+        .mxg-key:hover .mxg-key-letter,
+        .mxg-key:active .mxg-key-letter,
+        .mxg-key.mxg-pressed .mxg-key-letter { animation: none; }
+        @keyframes mxgAlive {
+          0%, 40%, 80%, 100% { transform: translateY(0) rotate(0deg); }
+          18% { transform: translateY(-4px) rotate(0deg); }
+          84% { transform: translateY(-1px) rotate(-6deg); }
+          88% { transform: translateY(-1px) rotate(6deg); }
+          92% { transform: translateY(-1px) rotate(-3deg); }
+          96% { transform: translateY(0) rotate(2deg); }
+        }
+
         /* ─── Hint lines ─── */
         .mxg-hint {
           font-family: 'DM Mono', monospace;
@@ -166,7 +188,7 @@ export default function MixerSection() {
         }
 
         @media (prefers-reduced-motion: reduce) {
-          .mxg-key { animation: none; }
+          .mxg-key, .mxg-key-letter { animation: none; }
           .mxg-gate, .mxg-stage { transition: opacity 0.25s; }
         }
       `}</style>
@@ -183,7 +205,7 @@ export default function MixerSection() {
           aria-label="Press P or tap to unlock the mixer"
           disabled={revealed}
         >
-          P
+          <span className="mxg-key-letter">P</span>
         </button>
         <p className="mxg-hint">Press <kbd>P</kbd> · or tap</p>
         <p className="mxg-sub">Unlock the mixer</p>

@@ -1696,6 +1696,7 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         .xy-pad:active .xy-instruct { opacity: 0; animation: none; }
         @media (prefers-reduced-motion: reduce) {
           .xy-instruct { animation: none; opacity: 0.4; }
+          .play-btn { animation: none; }
         }
         /* Desktop-default visible; touch-text hidden. Flip on touch devices. */
         .xy-instruct-touch { display: none; }
@@ -1725,6 +1726,18 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
         .play-btn.is-playing { background: var(--accent); color: #0a0a0a; border-color: var(--accent); box-shadow: 0 0 0 1px rgba(0,255,99,0.25), 0 0 12px rgba(0,255,99,0.35); }
         .play-btn.is-playing:hover { background: #0a0a0a; color: var(--accent); box-shadow: none; }
         .play-btn.is-playing .icon { width: 9px; height: 12px; border: none; background: linear-gradient(currentColor, currentColor) left/3px 100% no-repeat, linear-gradient(currentColor, currentColor) right/3px 100% no-repeat; background-color: transparent; }
+        /* Play CTA — when stopped, the button pulses a strong green halo to
+           invite a press. When playing, a calmer breathing glow signals "live". */
+        .play-btn:not(.is-playing) { animation: playCta 1.6s ease-in-out infinite; }
+        .play-btn.is-playing      { animation: playLive 2.6s ease-in-out infinite; }
+        @keyframes playCta {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,99,0), 0 0 0 0 rgba(0,255,99,0); }
+          50%      { box-shadow: 0 0 0 2px rgba(0,255,99,0.65), 0 0 30px 4px rgba(0,255,99,0.45); }
+        }
+        @keyframes playLive {
+          0%, 100% { box-shadow: 0 0 0 1px rgba(0,255,99,0.25), 0 0 14px 0 rgba(0,255,99,0.40); }
+          50%      { box-shadow: 0 0 0 1px rgba(0,255,99,0.45), 0 0 28px 2px rgba(0,255,99,0.65); }
+        }
 
         /* ─── Section value gets the accent so you can read the song state at a glance ─── */
         .section-value { color: var(--accent); }

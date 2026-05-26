@@ -44,11 +44,17 @@ export async function POST(req: NextRequest) {
     // Diagnostic — visible in runtime logs so we can confirm config is correct.
     console.warn(`[rsvp] sending from=${fromEmail} to_guest=${email} resend_key=${hasKey ? 'set' : 'MISSING'}`)
 
+    // Reply-to routes all replies (guest hitting reply on a confirmation, or
+    // organizer hitting reply on the alert) to the team inbox so nothing
+    // bounces — the from-address is outbound-only.
+    const replyTo = toEmail
+
     // Organizer notification. resend.emails.send() does NOT throw on a rejected
     // send — it returns { error } — so check it explicitly and log failures.
     const organizerSend = await resend.emails.send({
       from: fromEmail,
       to: toEmail,
+      replyTo,
       subject: `D5XX RSVP — ${firstName} ${lastName}`,
       html: organizerEmailHtml({ firstName, lastName, email, photoWaiver }),
     })
@@ -58,6 +64,7 @@ export async function POST(req: NextRequest) {
     const guestSend = await resend.emails.send({
       from: fromEmail,
       to: email,
+      replyTo,
       subject: `You're on the list — D5XX · June 9`,
       html: guestConfirmationHtml({ firstName }),
     })

@@ -64,6 +64,10 @@ export default function Home() {
   useEffect(() => {
     const cursor = cursorRef.current
     if (!cursor) return
+    // Now that the custom cursor is mounted and ready to track the mouse,
+    // hide the OS cursor. Doing this from JS (not static CSS) guarantees that
+    // a JS-failure state leaves the OS cursor visible.
+    document.body.classList.add('custom-cursor-enabled')
     let idleTimer: ReturnType<typeof setTimeout>
     const move = (e: MouseEvent) => {
       cursor.style.left = e.clientX + 'px'
@@ -81,6 +85,7 @@ export default function Home() {
       el.addEventListener('mouseleave', shrink)
     })
     return () => {
+      document.body.classList.remove('custom-cursor-enabled')
       document.removeEventListener('mousemove', move)
       hoverEls.forEach(el => {
         el.removeEventListener('mouseenter', expand)
@@ -300,8 +305,11 @@ export default function Home() {
           font-family: 'DM Mono', monospace;
           font-weight: 400;
           overflow-x: hidden;
-          cursor: none;
         }
+        /* Custom green-dot cursor — only hide the OS cursor once the cursor
+           script confirms it can render the replacement. If JS fails to load
+           (blocker, slow net, crash), users still have a cursor to navigate. */
+        body.custom-cursor-enabled { cursor: none; }
         ::selection { background: var(--green); color: var(--black); }
 
         /* ───────── CURSOR ───────── */
@@ -871,12 +879,26 @@ export default function Home() {
         /* ───────── REVEAL ───────── */
         .reveal {
           opacity: 0;
+          /* visibility:hidden also removes the element from the tab order,
+             so keyboard users don't blindly focus invisible form fields below
+             the fold. Transition has a 0.75s delay so the fade-out (if it ever
+             reverses) completes before the element vanishes from a11y trees. */
+          visibility: hidden;
           transform: translateY(28px);
           transition:
             opacity 0.75s cubic-bezier(0.16,1,0.3,1),
-            transform 0.75s cubic-bezier(0.16,1,0.3,1);
+            transform 0.75s cubic-bezier(0.16,1,0.3,1),
+            visibility 0s 0.75s;
         }
-        .reveal.visible { opacity: 1; transform: translateY(0); }
+        .reveal.visible {
+          opacity: 1;
+          visibility: visible;
+          transform: translateY(0);
+          transition:
+            opacity 0.75s cubic-bezier(0.16,1,0.3,1),
+            transform 0.75s cubic-bezier(0.16,1,0.3,1),
+            visibility 0s;
+        }
         /* Location ladder: after reveal, transform composes scaleX(1.1) with the JS-driven
            proximity scale (--prox). Higher specificity than plain .reveal.visible so this wins. */
         .loc-step.reveal.visible {

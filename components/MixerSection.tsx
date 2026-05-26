@@ -109,7 +109,9 @@ export default function MixerSection() {
           }
           50% {
             box-shadow:
-              0 14px 0 0 rgba(245,243,238,0.5),
+              /* The 14px "key cap" rim lights up green at the peak of the
+                 breath — the bottom edge feels physically alive. */
+              0 14px 0 0 rgba(0,255,99,0.85),
               0 18px 38px rgba(0,0,0,0.55),
               0 0 40px 4px rgba(0,255,99,0.27);
           }

@@ -657,6 +657,16 @@ export default function Home() {
         }
         .form-msg.success { border: 1px solid var(--green-deep); color: var(--green-deep); }
         .form-msg.error { border: 1px solid #d63b3b; color: #d63b3b; }
+        .form-msg-note {
+          display: block;
+          margin-top: 0.65rem;
+          font-size: 0.6rem;
+          letter-spacing: 0.04em;
+          text-transform: none;
+          opacity: 0.7;
+          line-height: 1.55;
+          font-weight: normal;
+        }
 
         /* ───────── THE EVENT (dark) ───────── */
         .event {
@@ -1034,7 +1044,10 @@ export default function Home() {
             )}
             {formState === 'success' && (
               <div className="form-msg success">
-                ✓ &nbsp;You&apos;re on the list, {form.firstName}. Check your inbox.
+                <div>✓ &nbsp;You&apos;re on the list, {form.firstName}. Check your inbox.</div>
+                <div className="form-msg-note">
+                  Check spam if you don&apos;t see a confirmation. Corporate email systems sometimes hold first-time senders.
+                </div>
               </div>
             )}
           </form>

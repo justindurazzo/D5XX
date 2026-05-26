@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     const organizerSend = await resend.emails.send({
       from: fromEmail,
       to: toEmail,
-      replyTo,
+      reply_to: replyTo,
       subject: `D5XX RSVP — ${firstName} ${lastName}`,
       html: organizerEmailHtml({ firstName, lastName, email, photoWaiver }),
     })
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
     const guestSend = await resend.emails.send({
       from: fromEmail,
       to: email,
-      replyTo,
+      reply_to: replyTo,
       subject: `You're on the list — D5XX · June 9`,
       html: guestConfirmationHtml({ firstName }),
     })

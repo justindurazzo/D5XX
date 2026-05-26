@@ -660,10 +660,12 @@ export default function Home() {
         .form-msg-note {
           display: block;
           margin-top: 0.65rem;
-          font-size: 0.6rem;
+          font-size: 0.62rem;
           letter-spacing: 0.04em;
           text-transform: none;
-          opacity: 0.7;
+          /* Override the parent's green so the caveat reads as a quiet
+             dark-grey secondary line, not a fainter shade of the headline. */
+          color: var(--ink-dim);
           line-height: 1.55;
           font-weight: normal;
         }

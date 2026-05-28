@@ -687,6 +687,17 @@ export default function Home() {
           text-decoration: underline;
           text-underline-offset: 3px;
         }
+        /* Small italic asterisked note sitting below the release box. */
+        .waiver-note {
+          font-family: 'DM Mono', monospace;
+          font-size: 0.6rem;
+          line-height: 1.55;
+          letter-spacing: 0.04em;
+          color: var(--gray-dim);
+          font-style: italic;
+          margin-top: 0.7rem;
+          padding: 0 0.1rem;
+        }
 
         .rsvp-submit {
           margin-top: 0.9rem;
@@ -1204,6 +1215,10 @@ export default function Home() {
                   <a href="/terms" target="_blank" rel="noreferrer">Read full terms</a>.
                 </p>
               </div>
+              <p className="waiver-note">
+                *Due to capacity restrictions, Droga5 Alumni must already be accepted
+                via Partiful, otherwise your invite will not be accepted.
+              </p>
             </div>
 
             {formState !== 'success' && (

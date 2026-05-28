@@ -869,8 +869,10 @@ export default function Home() {
            but feel responsive to the cursor. */
         .loc-step:hover::before { width: 2.4rem; background: var(--green); }
         .loc-step:not(.locked):hover { color: var(--green-deep); }
-        .loc-step.locked:hover { color: rgba(10,10,10,0.55); }
-        .loc-step.final.locked:hover { color: rgba(0,204,79,0.72); }
+        /* Locked TBDs now tint green on hover (was just a grey brightness
+           bump) so the rollover registers like the revealed steps do. */
+        .loc-step.locked:hover { color: rgba(0,204,79,0.6); }
+        .loc-step.final.locked:hover { color: rgba(0,204,79,0.78); }
         .loc-step.locked:hover .loc-step-date { opacity: 1; }
         .loc-step:nth-child(1) { font-size: clamp(28px, 3.2vw, 48px); }
         .loc-step:nth-child(2) { font-size: clamp(32px, 3.8vw, 56px); }

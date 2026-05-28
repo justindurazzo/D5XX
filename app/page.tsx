@@ -928,7 +928,11 @@ export default function Home() {
         }
         /* Six transparent-PNG figure cut-outs in a horizontal lineup, all
            sitting on a shared baseline. No tile background — the cream of
-           the section shows through behind each figure. */
+           the section shows through behind each figure.
+           Each tile has a fixed height so every figure scales to the same
+           vertical extent regardless of its source canvas aspect — that's
+           what stops one image (e.g. a tall narrow crop) from blowing up
+           larger than the others. Bumping the clamp scales everyone at once. */
         .dress-grid {
           position: relative;
           z-index: 1;
@@ -940,11 +944,17 @@ export default function Home() {
         .dress-tile {
           flex: 1 1 0;
           min-width: 0;
+          height: clamp(240px, 19vw, 400px);
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
           background: transparent;
           cursor: none;
         }
         .dress-tile img {
-          width: 100%;
+          max-width: 100%;
+          max-height: 100%;
+          width: auto;
           height: auto;
           display: block;
           transform: translateY(0);
@@ -1037,6 +1047,7 @@ export default function Home() {
             align-items: end;
             gap: 0.6rem 0.8rem;
           }
+          .dress-tile { height: clamp(220px, 30vw, 320px); }
           .location { padding: 4rem 1.25rem 5rem; }
           .topbar { padding: 0.6rem 1.25rem; font-size: 0.6rem; }
           footer { flex-direction: column; gap: 1rem; align-items: flex-start; padding: 2rem 1.25rem; }

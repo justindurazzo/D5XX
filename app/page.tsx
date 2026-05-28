@@ -71,6 +71,8 @@ function computePhase(): number {
 
 export default function Home() {
   const cursorRef = useRef<HTMLDivElement>(null)
+  // Easter-egg popover that follows the cursor over the photo/video release.
+  const danRef = useRef<HTMLDivElement>(null)
   const submitRef = useRef<HTMLButtonElement>(null)
   const [waiverChecked, setWaiverChecked] = useState(false)
   const [formState, setFormState] = useState<FormState>('idle')
@@ -270,6 +272,33 @@ export default function Home() {
     rafId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafId)
   }, [phase])
+
+  // ────── Easter egg: Dan Simonetti follows the cursor over PHOTO & VIDEO RELEASE ──────
+  useEffect(() => {
+    const waiver = document.querySelector<HTMLElement>('.waiver-row')
+    const dan = danRef.current
+    if (!waiver || !dan) return
+    const offsetX = 18
+    const offsetY = 22
+    const move = (e: MouseEvent) => {
+      const w = dan.offsetWidth || 180
+      const h = dan.offsetHeight || 260
+      const x = Math.min(Math.max(e.clientX + offsetX, 8), window.innerWidth - w - 8)
+      const y = Math.min(Math.max(e.clientY + offsetY, 8), window.innerHeight - h - 8)
+      dan.style.left = x + 'px'
+      dan.style.top = y + 'px'
+    }
+    const show = () => dan.classList.add('dan-visible')
+    const hide = () => dan.classList.remove('dan-visible')
+    waiver.addEventListener('mouseenter', show)
+    waiver.addEventListener('mouseleave', hide)
+    waiver.addEventListener('mousemove', move)
+    return () => {
+      waiver.removeEventListener('mouseenter', show)
+      waiver.removeEventListener('mouseleave', hide)
+      waiver.removeEventListener('mousemove', move)
+    }
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -1004,6 +1033,54 @@ export default function Home() {
           .loc-step.final { font-size: clamp(22px, 7.4vw, 44px); }
           .loc-step::before { left: -1rem; }
         }
+        /* ───────── DAN POPOVER ───────── */
+        /* Easter egg — follows the cursor when hovering the photo/video release. */
+        .dan-pop {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 180px;
+          background: #0a0a0a;
+          border: 1px solid var(--green-deep);
+          padding: 10px 10px 12px;
+          pointer-events: none;
+          z-index: 10000;
+          opacity: 0;
+          transform: scale(0.92);
+          transform-origin: top left;
+          transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.16,1,0.3,1);
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .dan-pop.dan-visible { opacity: 1; transform: scale(1); }
+        .dan-pop img {
+          width: 100%;
+          aspect-ratio: 1 / 1;
+          object-fit: cover;
+          display: block;
+          filter: grayscale(100%) contrast(1.05);
+        }
+        .dan-name {
+          font-family: 'Archivo Black', sans-serif;
+          font-size: 14px;
+          color: var(--green);
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
+          line-height: 1;
+        }
+        .dan-quip {
+          font-family: 'DM Mono', monospace;
+          font-size: 9.5px;
+          color: #f5f3ee;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          opacity: 0.85;
+          line-height: 1.35;
+        }
+        /* Touch-only devices have no hover, so just hide the popover entirely. */
+        @media (hover: none) { .dan-pop { display: none; } }
+
         @media (prefers-reduced-motion: reduce) {
           *, *::before, *::after {
             animation-duration: 0.01ms !important;
@@ -1015,6 +1092,13 @@ export default function Home() {
       `}</style>
 
       <div className="cursor" ref={cursorRef} />
+
+      {/* Easter egg — Dan from Business Affairs watches you over the photo release. */}
+      <div className="dan-pop" ref={danRef} aria-hidden="true">
+        <img src="/dan-simonetti.jpg" alt="" />
+        <p className="dan-name">DAN SIMONETTI</p>
+        <p className="dan-quip">Business Affairs is watching :)</p>
+      </div>
 
       {/* TOP NEON STRIP */}
       <header className="topbar">

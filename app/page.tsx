@@ -912,32 +912,35 @@ export default function Home() {
           z-index: 1;
           margin-bottom: 2.5rem;
         }
+        /* Six transparent-PNG figure cut-outs in a horizontal lineup, all
+           sitting on a shared baseline. No tile background — the cream of
+           the section shows through behind each figure. */
         .dress-grid {
           position: relative;
           z-index: 1;
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 0.8rem;
+          display: flex;
+          align-items: flex-end;
+          justify-content: space-between;
+          gap: 1rem;
         }
         .dress-tile {
-          aspect-ratio: 1 / 1;
-          position: relative;
-          overflow: hidden;
-          background: #d6d3cd;
+          flex: 1 1 0;
+          min-width: 0;
+          background: transparent;
           cursor: none;
         }
         .dress-tile img {
           width: 100%;
-          height: 100%;
-          object-fit: cover;
+          height: auto;
           display: block;
-          transform: scale(1.02);
-          transition: transform 0.7s cubic-bezier(0.16,1,0.3,1),
-                      filter 0.6s cubic-bezier(0.16,1,0.3,1);
+          transform: translateY(0);
+          transition: transform 0.5s cubic-bezier(0.16,1,0.3,1),
+                      filter 0.5s cubic-bezier(0.16,1,0.3,1);
         }
         .dress-tile:hover img {
-          transform: scale(1.07);
-          filter: brightness(1.05);
+          transform: translateY(-12px) scale(1.04);
+          transform-origin: bottom center;
+          filter: brightness(1.04) drop-shadow(0 12px 18px rgba(10,10,10,0.18));
         }
 
         /* ───────── FOOTER ───────── */
@@ -1012,7 +1015,14 @@ export default function Home() {
           }
           .rsvp-headline { font-size: clamp(64px, 17vw, 130px); }
           .dress { padding: 3.5rem 1.25rem 4.5rem; }
-          .dress-grid { grid-template-columns: repeat(2, 1fr); }
+          /* On phones/tablets the 6-across lineup gets too tight, so wrap to a
+             3-per-row grid that keeps the bottom-aligned-figures look. */
+          .dress-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            align-items: end;
+            gap: 0.6rem 0.8rem;
+          }
           .location { padding: 4rem 1.25rem 5rem; }
           .topbar { padding: 0.6rem 1.25rem; font-size: 0.6rem; }
           footer { flex-direction: column; gap: 1rem; align-items: flex-start; padding: 2rem 1.25rem; }
@@ -1291,9 +1301,9 @@ export default function Home() {
         <div className="bg-marks" aria-hidden="true">D5XX D5XX</div>
         <h2 className="dress-headline reveal">DRESS INSPO</h2>
         <div className="dress-grid">
-          {[1, 2, 3, 4].map((n, i) => (
+          {[1, 2, 3, 4, 5, 6].map((n, i) => (
             <div key={n} className={`dress-tile reveal reveal-d${i + 1}`}>
-              <img src={`/lookbook/${n}.jpg`} alt={`Dress inspo ${n}`} loading="lazy" />
+              <img src={`/lookbook/${n}.png`} alt={`Dress inspo ${n}`} loading="lazy" />
             </div>
           ))}
         </div>

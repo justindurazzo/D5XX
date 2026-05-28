@@ -42,6 +42,18 @@ const PHASE_REVEALS: Record<number, number> = {
   4: Date.parse('2026-06-08T16:00:00Z'), // The Box
 }
 
+// "M/D" label for each phase's reveal date, in NY time. Surfaced next to "TBD"
+// on locked ladder steps so visitors know exactly when to come back.
+const PHASE_DATE_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'numeric',
+  day: 'numeric',
+  timeZone: 'America/New_York',
+})
+function phaseDateLabel(phase: number): string {
+  const ts = PHASE_REVEALS[phase]
+  return ts ? PHASE_DATE_FORMATTER.format(new Date(ts)) : ''
+}
+
 function computePhase(): number {
   const params = new URLSearchParams(window.location.search)
   const override = params.get('phase')
@@ -836,6 +848,16 @@ export default function Home() {
         .loc-step.final a:hover { opacity: 0.72; }
         /* Locked steps — show "TBD" until their reveal phase. */
         .loc-step.locked { color: rgba(10,10,10,0.26); }
+        /* Small mono date next to "TBD" on locked steps — encourages revisits. */
+        .loc-step-date {
+          font-family: 'DM Mono', monospace;
+          font-weight: 400;
+          font-size: clamp(11px, 0.28em, 22px);
+          letter-spacing: 0.06em;
+          opacity: 0.75;
+          vertical-align: middle;
+          margin-left: 0.2em;
+        }
         .loc-step.locked.lit { color: rgba(10,10,10,0.26); }
         .loc-step.final.locked { color: rgba(0,204,79,0.42); }
 
@@ -1148,15 +1170,22 @@ export default function Home() {
         <div className="location-ladder">
           {LOCATION_STEPS.map((step, i) => {
             const revealed = phase >= step.phase
-            const text = revealed ? step.name : 'TBD'
             const className =
               `loc-step reveal reveal-d${i}` +
               (step.final ? ' final' : '') +
               (revealed ? '' : ' locked')
-            // The final step (THE BOX) becomes a Google Maps link when revealed.
-            const content = revealed && step.href ? (
-              <a href={step.href} target="_blank" rel="noopener noreferrer">{text}</a>
-            ) : text
+            // Revealed steps render the name (THE BOX wraps in a Maps link).
+            // Locked steps render "TBD" plus a small (M/D) so visitors know
+            // when to revisit.
+            const content = revealed ? (
+              step.href ? (
+                <a href={step.href} target="_blank" rel="noopener noreferrer">{step.name}</a>
+              ) : step.name
+            ) : (
+              <>
+                TBD <span className="loc-step-date">({phaseDateLabel(step.phase)})</span>
+              </>
+            )
             return (
               <div key={step.name} className={className}>
                 {content}

@@ -4,19 +4,21 @@ Working notes for the RSVP platform. The deploy steps are in `README.md`.
 
 ## Comms calendar → phased location reveal
 
-The location ladder on the homepage unlocks in stages, driven by the New York date:
+The location ladder on the homepage unlocks in stages, driven by New York time.
+Each phase activates at **noon Eastern (16:00 UTC during EDT)** on its listed date,
+so a morning launch on the same day still shows the previous phase.
 
-| Phase | Date  | Unlocks                                            |
-|-------|-------|----------------------------------------------------|
-| 1     | 05/26 | RSVP site live · Earth / North America / US / NYC  |
-| 2     | 05/29 | Manhattan                                          |
-| 3     | 06/02 | Lower East Side                                    |
-| 4     | 06/08 | Venue revealed                                     |
+| Phase | When                | Unlocks                                              |
+|-------|---------------------|------------------------------------------------------|
+| 1     | Launch (05/28 AM)   | Earth / North America / United States                |
+| 2     | 05/28 · 12:00 ET    | Manhattan                                            |
+| 3     | 06/02 · 12:00 ET    | Lower East Side                                      |
+| 4     | 06/08 · 12:00 ET    | THE BOX — links to the Google Maps location          |
 
-- Steps above the current phase render **redacted** (`████`).
-- Preview any stage on the feedback site with a query param: `?phase=1`, `?phase=2`, `?phase=3`, `?phase=4`.
-- **The venue is intentionally not named yet.** Per current direction, all mention of the venue is removed. When the venue is confirmed for the 06/08 reveal, set `VENUE_NAME` at the top of `app/page.tsx`.
-- 06/02 "Synthesizer Live" and 06/05 email comms are internal milestones — no site change.
+- Steps above the current phase render **"TBD"**.
+- Preview any phase on a deploy with `?phase=1`, `?phase=2`, `?phase=3`, `?phase=4`.
+- THE BOX is the final reveal — clicking it opens the venue (189 Chrystie St) in a new Google Maps tab.
+- Reveal moments live in `PHASE_REVEALS` at the top of `app/page.tsx`. Change the timestamps there to retime any phase.
 - All additional comms roll out via **email + Partiful**.
 
 ## Google Sheet RSVP database

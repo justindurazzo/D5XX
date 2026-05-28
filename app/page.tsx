@@ -12,18 +12,35 @@ type FormState = 'idle' | 'submitting' | 'success' | 'error'
 // Phase 4 · 06/08 — venue revealed
 // Steps above the current phase show "TBD". Add ?phase=1..4 to the URL to
 // preview any stage on the feedback site.
-const LOCATION_STEPS: { name: string; phase: number; final?: boolean }[] = [
+const LOCATION_STEPS: {
+  name: string
+  phase: number
+  final?: boolean
+  href?: string
+}[] = [
   { name: 'EARTH', phase: 1 },
   { name: 'NORTH AMERICA', phase: 1 },
   { name: 'UNITED STATES', phase: 1 },
-  { name: 'NEW YORK CITY', phase: 1 },
   { name: 'MANHATTAN', phase: 2 },
   { name: 'LOWER EAST SIDE', phase: 3 },
-  { name: 'THE VENUE', phase: 4, final: true },
+  // Final step: revealed 06/08 noon ET. Opens The Box (189 Chrystie St) in a
+  // new Google Maps tab.
+  {
+    name: 'THE BOX',
+    phase: 4,
+    final: true,
+    href: 'https://www.google.com/maps/search/?api=1&query=The+Box+189+Chrystie+St+New+York+NY+10002',
+  },
 ]
-// The venue name is revealed on 06/08. Left blank intentionally — fill this in
-// on the reveal date (the final ladder step shows "TBD" until then).
-const VENUE_NAME = ''
+
+// Reveal moments — each phase activates at noon Eastern on its listed date.
+// Noon ET == 16:00 UTC during EDT (March 9 – November 1, 2026).
+// Override with ?phase=1|2|3|4 to preview any state.
+const PHASE_REVEALS: Record<number, number> = {
+  2: Date.parse('2026-05-28T16:00:00Z'), // Manhattan
+  3: Date.parse('2026-06-02T16:00:00Z'), // Lower East Side
+  4: Date.parse('2026-06-08T16:00:00Z'), // The Box
+}
 
 function computePhase(): number {
   const params = new URLSearchParams(window.location.search)
@@ -32,12 +49,11 @@ function computePhase(): number {
     const n = parseInt(override, 10)
     if (n >= 1 && n <= 4) return n
   }
-  // Current date in New York, as YYYY-MM-DD (lexically comparable).
-  const ny = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+  const now = Date.now()
   let p = 1
-  if (ny >= '2026-05-29') p = 2
-  if (ny >= '2026-06-02') p = 3
-  if (ny >= '2026-06-08') p = 4
+  if (now >= PHASE_REVEALS[2]) p = 2
+  if (now >= PHASE_REVEALS[3]) p = 3
+  if (now >= PHASE_REVEALS[4]) p = 4
   return p
 }
 
@@ -799,6 +815,14 @@ export default function Home() {
           line-height: 1;
         }
         .loc-step.final.lit { letter-spacing: 0em; }
+        /* When revealed, THE BOX is a link to Google Maps — keep it visually
+           identical to the unlinked version, dim slightly on hover. */
+        .loc-step.final a {
+          color: inherit;
+          text-decoration: none;
+          transition: opacity 0.18s ease;
+        }
+        .loc-step.final a:hover { opacity: 0.72; }
         /* Locked steps — show "TBD" until their reveal phase. */
         .loc-step.locked { color: rgba(10,10,10,0.26); }
         .loc-step.locked.lit { color: rgba(10,10,10,0.26); }
@@ -1112,21 +1136,19 @@ export default function Home() {
         </p>
         <div className="location-ladder">
           {LOCATION_STEPS.map((step, i) => {
-            const unlocked = phase >= step.phase
-            const revealed = unlocked && (!step.final || Boolean(VENUE_NAME))
-            const text = revealed
-              ? (step.final ? VENUE_NAME : step.name)
-              : 'TBD'
+            const revealed = phase >= step.phase
+            const text = revealed ? step.name : 'TBD'
+            const className =
+              `loc-step reveal reveal-d${i}` +
+              (step.final ? ' final' : '') +
+              (revealed ? '' : ' locked')
+            // The final step (THE BOX) becomes a Google Maps link when revealed.
+            const content = revealed && step.href ? (
+              <a href={step.href} target="_blank" rel="noopener noreferrer">{text}</a>
+            ) : text
             return (
-              <div
-                key={step.name}
-                className={
-                  `loc-step reveal reveal-d${i}` +
-                  (step.final ? ' final' : '') +
-                  (revealed ? '' : ' locked')
-                }
-              >
-                {text}
+              <div key={step.name} className={className}>
+                {content}
               </div>
             )
           })}

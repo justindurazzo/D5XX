@@ -1186,10 +1186,11 @@ export default function Home() {
               >
                 <div className={`waiver-checkbox${waiverChecked ? ' checked' : ''}`} />
                 <p className="waiver-text">
-                  <strong>PHOTO &amp; VIDEO RELEASE:</strong> By checking this box,
-                  I consent to being photographed and/or filmed at D5XX on June 9
-                  and grant Droga5 the right to use such images and recordings for
-                  internal communications, archival, and social purposes.{' '}
+                  <strong>RELEASE &amp; CONSENT:</strong> By checking this box,
+                  I consent to the full terms, including being photographed/filmed
+                  at the event, granting Droga5 the right to use the images and
+                  recordings for internal and external communications relating to
+                  Droga5, as well as codes of conduct and other rules.{' '}
                   <a href="/terms" target="_blank" rel="noreferrer">Read full terms</a>.
                 </p>
               </div>

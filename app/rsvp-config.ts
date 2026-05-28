@@ -4,4 +4,4 @@
 // Every RSVP logged to the Google Sheet records the version that was in force
 // when the guest accepted, so each consent stays traceable to specific terms
 // text. The /terms page also displays this value.
-export const TERMS_VERSION = '2026-05-21'
+export const TERMS_VERSION = '2026-05-28'

@@ -9,15 +9,22 @@ import FlickerBackground from './FlickerBackground'
 // gate is an absolutely-positioned overlay contained within this section,
 // rather than the full-viewport fixed overlay that MixGate2 uses.
 //
-// Audio behaviour: the engine boots muted the moment the section scrolls into
-// view (gives the page a faint sonic teaser so people notice the mixer's
-// there), and ramps to full volume when the P-gate is unlocked.
+// Audio behaviour:
+//   1. The engine boots quietly + heavily lowpassed the moment the RSVP
+//      ("See You There?") section first enters the viewport.
+//   2. As the user scrolls toward the mixer, the lowpass opens up and the
+//      volume rises — like walking toward a room with music playing.
+//   3. When the P-gate is pressed, the lowpass fully opens and volume
+//      ramps to 1.0 — the full mix.
 export default function MixerSection() {
   const [revealed, setRevealed] = useState(false)
   const [pressed, setPressed] = useState(false)
-  // Sticky — flips true the first time the mixer scrolls into view and
-  // never flips back, so audio never cuts out from a casual scroll.
-  const [mixerInView, setMixerInView] = useState(false)
+  // Sticky — flips true the first time the user scrolls past the RSVP top edge.
+  // Once true, never flips back, so the audio engine doesn't yo-yo on scroll-up.
+  const [audioStarted, setAudioStarted] = useState(false)
+  // Continuous 0..1 — 0 when RSVP top just enters the viewport, 1 when the
+  // mixer top enters the viewport. Drives the scroll-driven crescendo.
+  const [scrollProgress, setScrollProgress] = useState(0)
   const embedRef = useRef<HTMLDivElement>(null)
 
   const reveal = useCallback(() => {
@@ -41,24 +48,54 @@ export default function MixerSection() {
     return () => window.removeEventListener('keydown', onKey)
   }, [revealed, pressed, reveal])
 
-  // Scroll-in trigger — start the audio engine (still muted) as soon as the
-  // mixer enters the viewport. By the time anyone has scrolled this far they've
-  // already used a wheel/touch gesture, so browser autoplay policies are fine.
+  // Scroll-driven crescendo: measure the user's scroll position between the
+  // RSVP section and the mixer section, normalize to 0..1, and let the audio
+  // params (volume + lowpass) interpolate from "muffled background" to "muted
+  // teaser ready for P-unlock". rAF-throttled so the listener never blows up
+  // the main thread.
   useEffect(() => {
-    const el = embedRef.current
-    if (!el || mixerInView) return
-    const observer = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) setMixerInView(true) }),
-      { threshold: 0.15 },
-    )
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [mixerInView])
+    let rafId: number | null = null
+    const compute = () => {
+      rafId = null
+      const rsvp = document.getElementById('rsvp')
+      const mixer = embedRef.current
+      if (!rsvp || !mixer) return
+      const vh = window.innerHeight
+      // scrollY value at which each section's TOP would meet the viewport bottom.
+      const startScroll = rsvp.offsetTop - vh
+      const endScroll = mixer.offsetTop - vh
+      const range = endScroll - startScroll
+      const p = range > 0 ? (window.scrollY - startScroll) / range : 0
+      const clamped = Math.min(1, Math.max(0, p))
+      setScrollProgress(clamped)
+      if (clamped > 0) setAudioStarted(prev => prev || true)
+    }
+    const onScroll = () => {
+      if (rafId == null) rafId = requestAnimationFrame(compute)
+    }
+    compute()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll, { passive: true })
+    return () => {
+      if (rafId != null) cancelAnimationFrame(rafId)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [])
 
-  // Audio engine boots on scroll-in OR on reveal; volume ramps from teaser to
-  // full when the gate opens.
-  const autoplay = mixerInView || revealed
-  const volumeScale = revealed ? 1 : (mixerInView ? 0.1 : 0)
+  // Audio engine boots once the user crosses the RSVP top, or instantly on
+  // P-press if they never scrolled there (e.g. anchor-jumped). The volume
+  // ramps with scroll and the lowpass opens with scroll; both go to "full"
+  // on P-press.
+  const autoplay = audioStarted || revealed
+  const volumeScale = revealed
+    ? 1
+    : (scrollProgress > 0 ? Math.max(0.04, scrollProgress * 0.16) : 0)
+  // Lowpass: 280Hz at RSVP top (muffled, low-end only) → 2500Hz at mixer top
+  // (mostly open) → 22kHz when revealed (effectively off).
+  const lowpassFreq = revealed
+    ? 22000
+    : 280 + scrollProgress * 2220
 
   return (
     // mix-page + data-theme="dark" activates Mixer2's built-in dark theme.
@@ -242,7 +279,12 @@ export default function MixerSection() {
 
       {/* The mixer underneath — fades up on reveal */}
       <div className={`mxg-stage${revealed ? ' mxg-stage-in' : ''}`} aria-hidden={!revealed}>
-        <Mixer2 autoplay={autoplay} autoplayDelay={500} volumeScale={volumeScale} />
+        <Mixer2
+          autoplay={autoplay}
+          autoplayDelay={500}
+          volumeScale={volumeScale}
+          lowpassFreq={lowpassFreq}
+        />
       </div>
     </div>
   )

@@ -213,12 +213,23 @@ type MixerProps = {
   /**
    * External master-output gain (0..1). Lets the host page start audio muted
    * (e.g. on scroll-in) and ramp to full volume later (e.g. on gate unlock).
-   * Smoothly ramps over ~0.6s whenever this prop changes.
+   * Smoothly approached via setTargetAtTime whenever this prop changes.
    */
   volumeScale?: number
+  /**
+   * Scroll-driven post-master lowpass cutoff in Hz. Used by the host to start
+   * the audio sounding muffled during the See-You-There approach and open
+   * it up as the user scrolls toward the mixer. 22000 = effectively off.
+   */
+  lowpassFreq?: number
 }
 
-export default function Mixer2({ autoplay = false, autoplayDelay = 400, volumeScale = 1 }: MixerProps = {}) {
+export default function Mixer2({
+  autoplay = false,
+  autoplayDelay = 400,
+  volumeScale = 1,
+  lowpassFreq = 22000,
+}: MixerProps = {}) {
   const [playing, setPlaying] = useState(false)
   const [sliders, setSliders] = useState<Sliders>(INITIAL_SLIDERS)
   const [bpm, setBpm] = useState(INITIAL_BPM)
@@ -249,6 +260,10 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400, volumeSc
   // so the host can start the engine muted and ramp up later. Separate from
   // masterRef (which is the internal scene-bus aggregation level).
   const masterOutRef    = useRef<GainNode | null>(null)
+  // Scroll-driven master lowpass — clamps highs during the approach to the
+  // mixer (everything sounds muffled, "from behind a wall") and opens up on
+  // P-press. Frequency is controlled externally via the lowpassFreq prop.
+  const scrollLowpassRef = useRef<BiquadFilterNode | null>(null)
 
   // Wall Street buses
   const drumsBusRef     = useRef<GainNode | null>(null)
@@ -460,10 +475,18 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400, volumeSc
     master.connect(masterSat); masterSat.connect(mixFilter); mixFilter.connect(userFilter); userFilter.connect(comp)
     comp.connect(lofiCrush); lofiCrush.connect(lofiLowpass)
     lofiLowpass.connect(tapeDelay); tapeDelay.connect(tapeTone)
+    // Scroll-driven lowpass — host clamps highs during the approach and
+    // opens up on the P-press.
+    const scrollLowpass = ctx.createBiquadFilter()
+    scrollLowpass.type = 'lowpass'
+    scrollLowpass.Q.value = 0.7
+    scrollLowpass.frequency.value = lowpassFreq
+    scrollLowpassRef.current = scrollLowpass
     // External-controlled master output — set from the volumeScale prop.
     const masterOut = ctx.createGain()
     masterOut.gain.value = volumeScale
-    tapeTone.connect(masterOut)
+    tapeTone.connect(scrollLowpass)
+    scrollLowpass.connect(masterOut)
     masterOut.connect(ctx.destination)
     masterOutRef.current = masterOut
     masterRef.current = master
@@ -1471,15 +1494,13 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400, volumeSc
   }, [])
 
   // ───── Autoplay (when revealed by parent gate) ─────
-  // Smoothly ramp the external master-output gain whenever volumeScale changes.
-  // This is what makes "muted-on-scroll-in → full-on-P-unlock" feel like one
-  // continuous track rather than two separate sounds.
+  // Smoothly approach the new master-output gain whenever volumeScale changes.
+  // setTargetAtTime — exponential approach, smooth even when updated rapidly
+  // (e.g. once per scroll frame during the See-You-There crescendo).
   //
   // Also re-attempts start() when volumeScale > 0 but we're not actually
-  // playing — this covers the case where the scroll-in autoplay was blocked
-  // by the browser's user-gesture requirement (common on desktop Safari and
-  // strict Chrome profiles). The P-press is a trusted gesture, so the retry
-  // here succeeds.
+  // playing — covers browsers that block the scroll-in autoplay because the
+  // scroll wasn't a trusted user gesture. The P-press always is.
   useEffect(() => {
     if (volumeScale > 0 && !playing) {
       start({ fadeIn: false }).catch(() => {})
@@ -1487,13 +1508,18 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400, volumeSc
     const ctx = audioCtxRef.current
     const node = masterOutRef.current
     if (!ctx || !node) return
-    // Belt-and-suspenders resume in case the context is still suspended.
     if (ctx.state === 'suspended') ctx.resume().catch(() => {})
-    const now = ctx.currentTime
-    node.gain.cancelScheduledValues(now)
-    node.gain.setValueAtTime(node.gain.value, now)
-    node.gain.linearRampToValueAtTime(volumeScale, now + 0.6)
+    node.gain.setTargetAtTime(volumeScale, ctx.currentTime, 0.22)
   }, [volumeScale, playing, start])
+
+  // Smoothly approach the scroll-driven lowpass cutoff. Drives "muffled at
+  // RSVP → bright at the mixer panel → fully open on P-press".
+  useEffect(() => {
+    const ctx = audioCtxRef.current
+    const node = scrollLowpassRef.current
+    if (!ctx || !node) return
+    node.frequency.setTargetAtTime(lowpassFreq, ctx.currentTime, 0.18)
+  }, [lowpassFreq])
 
   // Fires once: when `autoplay` flips true, schedule start(...) with a master fade-in, then
   // light up the X-Y pad nudge so the user notices the chaos pad.

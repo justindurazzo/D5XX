@@ -1474,15 +1474,26 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400, volumeSc
   // Smoothly ramp the external master-output gain whenever volumeScale changes.
   // This is what makes "muted-on-scroll-in → full-on-P-unlock" feel like one
   // continuous track rather than two separate sounds.
+  //
+  // Also re-attempts start() when volumeScale > 0 but we're not actually
+  // playing — this covers the case where the scroll-in autoplay was blocked
+  // by the browser's user-gesture requirement (common on desktop Safari and
+  // strict Chrome profiles). The P-press is a trusted gesture, so the retry
+  // here succeeds.
   useEffect(() => {
+    if (volumeScale > 0 && !playing) {
+      start({ fadeIn: false }).catch(() => {})
+    }
     const ctx = audioCtxRef.current
     const node = masterOutRef.current
     if (!ctx || !node) return
+    // Belt-and-suspenders resume in case the context is still suspended.
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {})
     const now = ctx.currentTime
     node.gain.cancelScheduledValues(now)
     node.gain.setValueAtTime(node.gain.value, now)
     node.gain.linearRampToValueAtTime(volumeScale, now + 0.6)
-  }, [volumeScale])
+  }, [volumeScale, playing, start])
 
   // Fires once: when `autoplay` flips true, schedule start(...) with a master fade-in, then
   // light up the X-Y pad nudge so the user notices the chaos pad.

@@ -8,12 +8,12 @@ The location ladder on the homepage unlocks in stages, driven by New York time.
 Each phase activates at **noon Eastern (16:00 UTC during EDT)** on its listed date,
 so a morning launch on the same day still shows the previous phase.
 
-| Phase | When                | Unlocks                                              |
-|-------|---------------------|------------------------------------------------------|
-| 1     | Launch (05/28 AM)   | Earth / North America / United States                |
-| 2     | 05/28 · 12:00 ET    | Manhattan                                            |
-| 3     | 06/02 · 12:00 ET    | Lower East Side                                      |
-| 4     | 06/08 · 12:00 ET    | THE BOX — links to the Google Maps location          |
+| Phase | When                | Unlocks                                                             |
+|-------|---------------------|---------------------------------------------------------------------|
+| 1     | Launch (05/28 AM)   | Earth / North America / United States                               |
+| 2     | 05/28 · 12:00 ET    | Manhattan                                                           |
+| 3     | 06/02 · 12:00 ET    | Lower East Side **+ the Bits & Bobs mixer appears for the first time** |
+| 4     | 06/08 · 12:00 ET    | THE BOX — links to the Google Maps location                         |
 
 - Steps above the current phase render **"TBD"**.
 - Preview any phase on a deploy with `?phase=1`, `?phase=2`, `?phase=3`, `?phase=4`.

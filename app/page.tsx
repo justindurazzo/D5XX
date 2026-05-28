@@ -1325,8 +1325,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* MIXER — interactive music module, gated behind the P push button */}
-      <MixerSection />
+      {/* MIXER — interactive music module, gated behind the P push button.
+          Reveals on Phase 3 (06/02 12:00 ET), the same moment LOWER EAST SIDE
+          unlocks on the ladder. Preview with ?phase=3 or ?phase=4. */}
+      {phase >= 3 && <MixerSection />}
 
       {/* DRESS INSPO */}
       <section id="dress" className="dress">

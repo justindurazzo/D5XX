@@ -802,6 +802,15 @@ export default function Home() {
         }
         .loc-step.lit { color: var(--black); }
         .loc-step.lit::before { width: 1.5rem; }
+        /* Hover rollover on revealed steps — tints the text toward the brand
+           green and extends the lit dash. Locked (TBD) steps are excluded so
+           they don't fake interactivity before their reveal date. */
+        .loc-step.lit:not(.locked) { transition: color 0.3s ease; }
+        .loc-step.lit:not(.locked):hover { color: var(--green-deep); }
+        .loc-step.lit:not(.locked):hover::before {
+          width: 2.4rem;
+          background: var(--green);
+        }
         .loc-step:nth-child(1) { font-size: clamp(28px, 3.2vw, 48px); }
         .loc-step:nth-child(2) { font-size: clamp(32px, 3.8vw, 56px); }
         .loc-step:nth-child(3) { font-size: clamp(36px, 4.4vw, 64px); }

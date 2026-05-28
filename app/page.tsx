@@ -784,7 +784,9 @@ export default function Home() {
           font-family: 'Archivo Black', sans-serif;
           letter-spacing: -0.015em;
           line-height: 0.95;
-          color: rgba(10,10,10,0.32);
+          /* Revealed steps are black from the start — .lit only drives the dash
+             animation, not color. Locked (TBD) steps override below to stay dim. */
+          color: var(--black);
           transform: scaleX(1.1);
           transform-origin: left center;
           transition: color 0.5s cubic-bezier(0.16,1,0.3,1), opacity 0.5s, letter-spacing 0.5s;

@@ -687,16 +687,19 @@ export default function Home() {
           text-decoration: underline;
           text-underline-offset: 3px;
         }
-        /* Small italic asterisked note sitting below the release box. */
+        /* Wrapper inside the waiver-row that holds both the release body and
+           the alumni asterisk — keeps both columns aligned past the checkbox. */
+        .waiver-content { flex: 1; min-width: 0; }
+        /* Asterisked alumni note — same typography as the release body, on a
+           new line below it (the "return after READ FULL TERMS"). */
         .waiver-note {
           font-family: 'DM Mono', monospace;
-          font-size: 0.6rem;
-          line-height: 1.55;
+          font-size: 0.62rem;
+          line-height: 1.65;
           letter-spacing: 0.04em;
           color: var(--gray-dim);
-          font-style: italic;
-          margin-top: 0.7rem;
-          padding: 0 0.1rem;
+          text-transform: uppercase;
+          margin-top: 1.1em;
         }
 
         .rsvp-submit {
@@ -1206,19 +1209,21 @@ export default function Home() {
                 }}
               >
                 <div className={`waiver-checkbox${waiverChecked ? ' checked' : ''}`} />
-                <p className="waiver-text">
-                  <strong>RELEASE &amp; CONSENT:</strong> By checking this box,
-                  I consent to the full terms, including being photographed/filmed
-                  at the event, granting Droga5 the right to use the images and
-                  recordings for internal and external communications relating to
-                  Droga5, as well as codes of conduct and other rules.{' '}
-                  <a href="/terms" target="_blank" rel="noreferrer">Read full terms</a>.
-                </p>
+                <div className="waiver-content">
+                  <p className="waiver-text">
+                    <strong>RELEASE &amp; CONSENT:</strong> By checking this box,
+                    I consent to the full terms, including being photographed/filmed
+                    at the event, granting Droga5 the right to use the images and
+                    recordings for internal and external communications relating to
+                    Droga5, as well as codes of conduct and other rules.{' '}
+                    <a href="/terms" target="_blank" rel="noreferrer">Read full terms</a>.
+                  </p>
+                  <p className="waiver-note">
+                    *Due to capacity restrictions, Droga5 Alumni must already be
+                    accepted via Partiful, otherwise your invite will not be accepted.
+                  </p>
+                </div>
               </div>
-              <p className="waiver-note">
-                *Due to capacity restrictions, Droga5 Alumni must already be accepted
-                via Partiful, otherwise your invite will not be accepted.
-              </p>
             </div>
 
             {formState !== 'success' && (

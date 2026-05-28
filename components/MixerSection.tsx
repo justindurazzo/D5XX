@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import Mixer2 from './Mixer2'
 import FlickerBackground from './FlickerBackground'
 
@@ -8,9 +8,17 @@ import FlickerBackground from './FlickerBackground'
 // button — the same unlock interaction as the standalone /mixer2 page — but the
 // gate is an absolutely-positioned overlay contained within this section,
 // rather than the full-viewport fixed overlay that MixGate2 uses.
+//
+// Audio behaviour: the engine boots muted the moment the section scrolls into
+// view (gives the page a faint sonic teaser so people notice the mixer's
+// there), and ramps to full volume when the P-gate is unlocked.
 export default function MixerSection() {
   const [revealed, setRevealed] = useState(false)
   const [pressed, setPressed] = useState(false)
+  // Sticky — flips true the first time the mixer scrolls into view and
+  // never flips back, so audio never cuts out from a casual scroll.
+  const [mixerInView, setMixerInView] = useState(false)
+  const embedRef = useRef<HTMLDivElement>(null)
 
   const reveal = useCallback(() => {
     setPressed(true)
@@ -33,9 +41,28 @@ export default function MixerSection() {
     return () => window.removeEventListener('keydown', onKey)
   }, [revealed, pressed, reveal])
 
+  // Scroll-in trigger — start the audio engine (still muted) as soon as the
+  // mixer enters the viewport. By the time anyone has scrolled this far they've
+  // already used a wheel/touch gesture, so browser autoplay policies are fine.
+  useEffect(() => {
+    const el = embedRef.current
+    if (!el || mixerInView) return
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) setMixerInView(true) }),
+      { threshold: 0.15 },
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [mixerInView])
+
+  // Audio engine boots on scroll-in OR on reveal; volume ramps from teaser to
+  // full when the gate opens.
+  const autoplay = mixerInView || revealed
+  const volumeScale = revealed ? 1 : (mixerInView ? 0.1 : 0)
+
   return (
     // mix-page + data-theme="dark" activates Mixer2's built-in dark theme.
-    <div className="mxg-embed mix-page" data-theme="dark">
+    <div ref={embedRef} className="mxg-embed mix-page" data-theme="dark">
       <style>{`
         .mxg-embed { position: relative; background: #0a0a0a; }
 
@@ -215,7 +242,7 @@ export default function MixerSection() {
 
       {/* The mixer underneath — fades up on reveal */}
       <div className={`mxg-stage${revealed ? ' mxg-stage-in' : ''}`} aria-hidden={!revealed}>
-        <Mixer2 autoplay={revealed} autoplayDelay={500} />
+        <Mixer2 autoplay={autoplay} autoplayDelay={500} volumeScale={volumeScale} />
       </div>
     </div>
   )

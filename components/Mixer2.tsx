@@ -210,9 +210,15 @@ type MixerProps = {
   autoplay?: boolean
   /** Delay (ms) between autoplay becoming true and the audio actually starting. */
   autoplayDelay?: number
+  /**
+   * External master-output gain (0..1). Lets the host page start audio muted
+   * (e.g. on scroll-in) and ramp to full volume later (e.g. on gate unlock).
+   * Smoothly ramps over ~0.6s whenever this prop changes.
+   */
+  volumeScale?: number
 }
 
-export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerProps = {}) {
+export default function Mixer2({ autoplay = false, autoplayDelay = 400, volumeScale = 1 }: MixerProps = {}) {
   const [playing, setPlaying] = useState(false)
   const [sliders, setSliders] = useState<Sliders>(INITIAL_SLIDERS)
   const [bpm, setBpm] = useState(INITIAL_BPM)
@@ -239,6 +245,10 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
 
   const audioCtxRef     = useRef<AudioContext | null>(null)
   const masterRef       = useRef<GainNode | null>(null)
+  // Final gain node, AFTER the lo-fi/tape chain — driven by the volumeScale prop
+  // so the host can start the engine muted and ramp up later. Separate from
+  // masterRef (which is the internal scene-bus aggregation level).
+  const masterOutRef    = useRef<GainNode | null>(null)
 
   // Wall Street buses
   const drumsBusRef     = useRef<GainNode | null>(null)
@@ -449,7 +459,13 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
     // the band instead of filtering an already-clean signal, so sweeps feel musical.
     master.connect(masterSat); masterSat.connect(mixFilter); mixFilter.connect(userFilter); userFilter.connect(comp)
     comp.connect(lofiCrush); lofiCrush.connect(lofiLowpass)
-    lofiLowpass.connect(tapeDelay); tapeDelay.connect(tapeTone); tapeTone.connect(ctx.destination)
+    lofiLowpass.connect(tapeDelay); tapeDelay.connect(tapeTone)
+    // External-controlled master output — set from the volumeScale prop.
+    const masterOut = ctx.createGain()
+    masterOut.gain.value = volumeScale
+    tapeTone.connect(masterOut)
+    masterOut.connect(ctx.destination)
+    masterOutRef.current = masterOut
     masterRef.current = master
 
     // Scene buses (equal-power initial weights)
@@ -1455,6 +1471,19 @@ export default function Mixer2({ autoplay = false, autoplayDelay = 400 }: MixerP
   }, [])
 
   // ───── Autoplay (when revealed by parent gate) ─────
+  // Smoothly ramp the external master-output gain whenever volumeScale changes.
+  // This is what makes "muted-on-scroll-in → full-on-P-unlock" feel like one
+  // continuous track rather than two separate sounds.
+  useEffect(() => {
+    const ctx = audioCtxRef.current
+    const node = masterOutRef.current
+    if (!ctx || !node) return
+    const now = ctx.currentTime
+    node.gain.cancelScheduledValues(now)
+    node.gain.setValueAtTime(node.gain.value, now)
+    node.gain.linearRampToValueAtTime(volumeScale, now + 0.6)
+  }, [volumeScale])
+
   // Fires once: when `autoplay` flips true, schedule start(...) with a master fade-in, then
   // light up the X-Y pad nudge so the user notices the chaos pad.
   useEffect(() => {

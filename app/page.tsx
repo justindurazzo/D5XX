@@ -691,13 +691,14 @@ export default function Home() {
            the alumni asterisk — keeps both columns aligned past the checkbox. */
         .waiver-content { flex: 1; min-width: 0; }
         /* Asterisked alumni note — same typography as the release body, on a
-           new line below it (the "return after READ FULL TERMS"). */
+           new line below it (the "return after READ FULL TERMS"). Rendered
+           in brand green so it reads as the "watch out" line, not body copy. */
         .waiver-note {
           font-family: 'DM Mono', monospace;
           font-size: 0.62rem;
           line-height: 1.65;
           letter-spacing: 0.04em;
-          color: var(--gray-dim);
+          color: var(--green);
           text-transform: uppercase;
           margin-top: 1.1em;
         }

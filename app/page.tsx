@@ -838,22 +838,25 @@ export default function Home() {
           position: absolute;
           left: -2rem;
           top: 50%;
-          width: 0;
+          /* Every step gets its em-dash from page load — no longer waits for the
+             IntersectionObserver to add .lit, so EARTH (which sits above the
+             "middle 20%" trigger zone) shows the dash too. */
+          width: 1.5rem;
           height: 1px;
           background: var(--green-deep);
-          transition: width 0.5s cubic-bezier(0.16,1,0.3,1);
+          transition: width 0.35s cubic-bezier(0.16,1,0.3,1), background 0.25s ease;
         }
         .loc-step.lit { color: var(--black); }
-        .loc-step.lit::before { width: 1.5rem; }
-        /* Hover rollover on revealed steps — tints the text toward the brand
-           green and extends the lit dash. Locked (TBD) steps are excluded so
-           they don't fake interactivity before their reveal date. */
-        .loc-step.lit:not(.locked) { transition: color 0.3s ease; }
-        .loc-step.lit:not(.locked):hover { color: var(--green-deep); }
-        .loc-step.lit:not(.locked):hover::before {
-          width: 2.4rem;
-          background: var(--green);
-        }
+        /* Smooth tint when hovering any step (revealed or locked). */
+        .loc-step { transition: color 0.3s ease; }
+        /* Hover rollover — extends the dash and brightens it to neon green on
+           every step. Color shifts vary by state so TBDs still read as locked
+           but feel responsive to the cursor. */
+        .loc-step:hover::before { width: 2.4rem; background: var(--green); }
+        .loc-step:not(.locked):hover { color: var(--green-deep); }
+        .loc-step.locked:hover { color: rgba(10,10,10,0.55); }
+        .loc-step.final.locked:hover { color: rgba(0,204,79,0.72); }
+        .loc-step.locked:hover .loc-step-date { opacity: 1; }
         .loc-step:nth-child(1) { font-size: clamp(28px, 3.2vw, 48px); }
         .loc-step:nth-child(2) { font-size: clamp(32px, 3.8vw, 56px); }
         .loc-step:nth-child(3) { font-size: clamp(36px, 4.4vw, 64px); }

@@ -84,13 +84,8 @@ export async function appendRsvpToSheet(row: RsvpRow): Promise<void> {
     rawSheetId.match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1] ??
     rawSheetId.trim().split(/[/?#]/)[0]
 
-  // Diagnostic — confirms the resolved spreadsheet ID is a clean value.
-  console.warn(`[rsvp] sheetid resolved len=${sheetId.length}`)
-
   try {
     const creds = JSON.parse(rawKey) as { client_email: string; private_key: string }
-    // Diagnostic — confirms which service account the key authenticates as.
-    console.warn(`[rsvp] sa=${creds.client_email}`)
     // Env vars store newlines as the literal characters "\n" — restore them.
     const privateKey = String(creds.private_key).replace(/\\n/g, '\n')
     const token = await getAccessToken(creds.client_email, privateKey)

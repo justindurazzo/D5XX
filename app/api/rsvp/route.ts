@@ -39,10 +39,6 @@ export async function POST(req: NextRequest) {
 
     const toEmail = process.env.RSVP_TO_EMAIL || 'rsvp@droga5.com'
     const fromEmail = process.env.RSVP_FROM_EMAIL || 'onboarding@resend.dev'
-    const hasKey = !!process.env.RESEND_API_KEY
-
-    // Diagnostic — visible in runtime logs so we can confirm config is correct.
-    console.warn(`[rsvp] sending from=${fromEmail} to_guest=${email} resend_key=${hasKey ? 'set' : 'MISSING'}`)
 
     // Reply-to routes all replies (guest hitting reply on a confirmation, or
     // organizer hitting reply on the alert) to the team inbox so nothing
@@ -58,7 +54,9 @@ export async function POST(req: NextRequest) {
       subject: `D5XX RSVP — ${firstName} ${lastName}`,
       html: organizerEmailHtml({ firstName, lastName, email, photoWaiver }),
     })
-    console.warn(`[rsvp] organizer ${organizerSend.error ? 'ERROR ' + JSON.stringify(organizerSend.error) : 'OK id=' + organizerSend.data?.id}`)
+    if (organizerSend.error) {
+      console.error('[rsvp] organizer email failed:', JSON.stringify(organizerSend.error))
+    }
 
     // Guest confirmation
     const guestSend = await resend.emails.send({
@@ -68,23 +66,11 @@ export async function POST(req: NextRequest) {
       subject: `You're on the list — D5XX · June 9`,
       html: guestConfirmationHtml({ firstName }),
     })
-    console.warn(`[rsvp] guest ${guestSend.error ? 'ERROR ' + JSON.stringify(guestSend.error) : 'OK id=' + guestSend.data?.id}`)
+    if (guestSend.error) {
+      console.error('[rsvp] guest email failed:', JSON.stringify(guestSend.error))
+    }
 
-    // Include email status in the response so it's visible in the browser's
-    // network tab without log-spelunking. Temporary diagnostic.
-    return NextResponse.json({
-      success: true,
-      debug: {
-        from: fromEmail,
-        resendKey: hasKey,
-        organizer: organizerSend.error
-          ? { ok: false, error: organizerSend.error }
-          : { ok: true, id: organizerSend.data?.id },
-        guest: guestSend.error
-          ? { ok: false, error: guestSend.error }
-          : { ok: true, id: guestSend.data?.id },
-      },
-    })
+    return NextResponse.json({ success: true })
   } catch (err) {
     console.error('RSVP error:', err)
     return NextResponse.json(

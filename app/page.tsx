@@ -1289,8 +1289,8 @@ export default function Home() {
           <p className="event-body reveal reveal-d1">
             Twenty years of making it matter. An invitation-only evening
             celebrating the decades of work, people, and the ideas that defined
-            a generation of creativity. Past and present Drogans, clients, and
-            collaborators — together for one night.
+            a generation of creativity. Past and present Drogans — together
+            for one night.
           </p>
         </div>
 

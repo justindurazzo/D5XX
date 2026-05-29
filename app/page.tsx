@@ -969,6 +969,19 @@ export default function Home() {
           transform-origin: bottom center;
           filter: brightness(1.04) drop-shadow(0 12px 18px rgba(10,10,10,0.18));
         }
+        /* Small all-caps black note sitting under the figure lineup. */
+        .dress-note {
+          position: relative;
+          z-index: 1;
+          margin-top: 2.5rem;
+          max-width: 64ch;
+          font-family: 'DM Mono', monospace;
+          font-size: 0.68rem;
+          line-height: 1.7;
+          letter-spacing: 0.06em;
+          color: var(--black);
+          text-transform: uppercase;
+        }
 
         /* ───────── FOOTER ───────── */
         footer {
@@ -1343,6 +1356,13 @@ export default function Home() {
             </div>
           ))}
         </div>
+        <p className="dress-note reveal reveal-d2">
+          Catch people&apos;s eyes with a fit they can&apos;t miss — flashy, but
+          something you can still have fun in. That thing in your closet that&apos;s
+          a little out of your comfort zone, but you&apos;ve been dying to try
+          (unless they&apos;re heels — know yourself). Anything BOLD. Or at least
+          bolder than what you wear to work.
+        </p>
       </section>
 
       {/* FOOTER */}

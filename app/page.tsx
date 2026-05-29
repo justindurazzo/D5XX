@@ -776,7 +776,9 @@ export default function Home() {
           font-family: 'DM Mono', monospace;
           font-size: 0.78rem;
           line-height: 1.75;
-          color: var(--gray-dim);
+          /* Same white as the marquee ticker, for legibility on the dark
+             event section. */
+          color: var(--white);
           text-transform: uppercase;
           letter-spacing: 0.05em;
           max-width: 44ch;

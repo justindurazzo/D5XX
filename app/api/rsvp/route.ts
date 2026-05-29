@@ -41,9 +41,15 @@ export async function POST(req: NextRequest) {
     const fromEmail = process.env.RSVP_FROM_EMAIL || 'onboarding@resend.dev'
 
     // Reply-to routes all replies (guest hitting reply on a confirmation, or
-    // organizer hitting reply on the alert) to the team inbox so nothing
+    // organizer hitting reply on the alert) to a real inbox so nothing
     // bounces — the from-address is outbound-only.
-    const replyTo = toEmail
+    //
+    // Set RSVP_REPLY_TO_EMAIL to advertise an on-brand address (e.g.
+    // rsvp@d5xx.mn) in the reply-to header — that address must be a real
+    // receiving mailbox or have email forwarding set up at the domain, or
+    // replies will bounce. With it unset, reply-to falls back to
+    // RSVP_TO_EMAIL (the organizer alert inbox).
+    const replyTo = process.env.RSVP_REPLY_TO_EMAIL || toEmail
 
     // Organizer notification. resend.emails.send() does NOT throw on a rejected
     // send — it returns { error } — so check it explicitly and log failures.
